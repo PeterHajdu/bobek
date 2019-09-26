@@ -33,7 +33,8 @@ test-suite test
 
 executable bobek
   main-is:             Main.hs
-  -- other-modules:       
+  other-modules:       Source
+                     , Message
   -- other-extensions:    
   build-depends:       base >=4.10
                      , amqp
