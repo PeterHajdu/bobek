@@ -35,6 +35,7 @@ executable bobek
   main-is:             Main.hs
   other-modules:       Source
                      , Message
+                     , Destination
   -- other-extensions:    
   build-depends:       base >=4.10
                      , amqp
