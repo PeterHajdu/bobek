@@ -1,3 +1,3 @@
-module Message(Message) where
+module Message(Message(..)) where
 
-data Message
+data Message = MkMessage

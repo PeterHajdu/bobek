@@ -13,11 +13,16 @@ cabal-version:       >=1.10
 
 test-suite test
   main-is:             Test.hs
-  -- other-modules:       
-  -- other-extensions:    
   type:                exitcode-stdio-1.0
   build-depends:       base >=4.10
                      , hspec
+                     , mtl
+  other-modules:       Main
+                     , FakeEnvironment
+                     , Source
+                     , Destination
+                     , Message
+                     , Mover
   hs-source-dirs:      src, test
   default-language:    Haskell2010
   ghc-options:         -Weverything
@@ -33,10 +38,11 @@ test-suite test
 
 executable bobek
   main-is:             Main.hs
-  other-modules:       Source
+  other-modules:       Main
+                     , Source
                      , Message
                      , Destination
-  -- other-extensions:    
+                     , Mover
   build-depends:       base >=4.10
                      , amqp
   hs-source-dirs:      src
