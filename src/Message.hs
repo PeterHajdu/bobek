@@ -1,3 +1,5 @@
 module Message(Message(..)) where
 
-data Message = MkMessage
+import Data.ByteString (ByteString)
+
+data Message = MkMessage {message :: ByteString} deriving (Eq, Show)
