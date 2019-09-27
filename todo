@@ -1,0 +1,2 @@
+ * publish should receive the ReceiveId of the message as well
+ * use newtype instead of data where possible
