@@ -9,7 +9,10 @@ import Data.Either (rights)
 
 moveMessages :: (Source m, Destination m) => m ()
 moveMessages = do
-  maybeMessages <- receive 1
-  let messages = snd <$> rights maybeMessages
+  maybeMessages <- receive 100
+  let idsAndMessages = rights maybeMessages
+  let messages = snd <$> idsAndMessages
   _ <- publish messages
+  let ids = fst <$> idsAndMessages
+  acknowledge ids
   return ()

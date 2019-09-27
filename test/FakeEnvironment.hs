@@ -16,7 +16,7 @@ data Environment = MkEnv {
     toReceive :: [Either SourceError (ReceiveId, Message)]
   , acknowledgedMessages :: [ReceiveId]
   , published :: [Message]
-  , publishResults :: [Either DestinationError ()]
+  , publishResults :: PublishResult
 }
 
 newtype FakeEnvironment a = MkFakeEnvironment {run :: State Environment a} deriving (Functor, Applicative, Monad, MonadState Environment)

@@ -2,7 +2,7 @@ module Source(Source(..), ReceiveId(..), SourceError(..)) where
 
 import Message(Message)
 
-newtype ReceiveId = MkReceiveId Int deriving Eq --todo: Integer?
+newtype ReceiveId = MkReceiveId Int deriving (Eq, Show) --todo: Integer?
 newtype SourceError = MkSourceError String deriving Show
 
 class Monad m => Source m where
