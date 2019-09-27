@@ -12,7 +12,6 @@ moveMessages = do
   maybeMessages <- receive 100
   let idsAndMessages = rights maybeMessages
   let messages = snd <$> idsAndMessages
-  _ <- publish messages
-  let ids = fst <$> idsAndMessages
-  acknowledge ids
+  publishResult <- publish messages
+  acknowledge $ succeeded publishResult
   return ()

@@ -22,6 +22,10 @@ testMessagesToReceive = do
 publishSuccess :: PublishResult
 publishSuccess = MkPublishResult [] testIds
 
+someSucceeds :: [ReceiveId] -> PublishResult
+someSucceeds succeededIds = let failedIds = filter (flip elem $ succeededIds) testIds
+                           in MkPublishResult failedIds succeededIds
+
 main :: IO ()
 main = hspec $ do
   describe "moveMessages" $ do
@@ -32,3 +36,8 @@ main = hspec $ do
     it "should acknowledge published messages" $ do
       let result = runMoveMessages (MkEnv testMessagesToReceive [] [] publishSuccess)
       (acknowledgedMessages result) `shouldBe` testIds
+
+    it "should acknowledge messages only if publishing succeeds" $ do
+      let succeededIds = [MkReceiveId 10, MkReceiveId 20]
+      let result = runMoveMessages (MkEnv testMessagesToReceive [] [] (someSucceeds succeededIds))
+      (acknowledgedMessages result) `shouldBe` succeededIds
