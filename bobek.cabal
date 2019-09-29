@@ -39,8 +39,7 @@ test-suite test
 
 executable bobek
   main-is:             Main.hs
-  other-modules:       Main
-                     , Source
+  other-modules:       Source
                      , Message
                      , Destination
                      , Mover
