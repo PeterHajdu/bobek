@@ -1,11 +1,11 @@
-module Source(Source(..), ReceiveId(..), SourceError(..)) where
+module Source(Source(..), SourceError(..)) where
 
 import Message(Message)
+import ReceiveId(ReceiveId)
 
-newtype ReceiveId = MkReceiveId Int deriving (Eq, Show) --todo: Integer?
 newtype SourceError = MkSourceError String deriving Show
 
 class Monad m => Source m where
-  receive :: Int -> m [Either SourceError (ReceiveId, Message)]
+  receive :: Int -> m [Either SourceError Message]
   acknowledge :: [ReceiveId] -> m ()
 

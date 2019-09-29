@@ -2,6 +2,7 @@
 
 module Main(main) where
 
+import ReceiveId(ReceiveId(..))
 import Test.Hspec
 import FakeEnvironment
 import Message
@@ -9,15 +10,14 @@ import Source
 import Destination
 
 testMessages :: [Message]
-testMessages = replicate 100 (MkMessage "test message")
+testMessages = (\rid -> (MkMessage (MkReceiveId rid) "test message")) <$> [1..100]
+
 
 testIds :: [ReceiveId]
-testIds = MkReceiveId <$> [1..(length testMessages)]
+testIds = receiveId <$> testMessages
 
-testMessagesToReceive :: [Either SourceError (ReceiveId, Message)]
-testMessagesToReceive = do
-  (receiveId, msg) <- (zip testIds testMessages)
-  return $ Right (receiveId, msg)
+testMessagesToReceive :: [Either SourceError Message]
+testMessagesToReceive = Right <$> testMessages
 
 publishSuccess :: PublishResult
 publishSuccess = MkPublishResult [] testIds

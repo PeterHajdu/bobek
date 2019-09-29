@@ -10,8 +10,6 @@ import Data.Either (rights)
 moveMessages :: (Source m, Destination m) => m ()
 moveMessages = do
   maybeMessages <- receive 100
-  let idsAndMessages = rights maybeMessages
-  let messages = snd <$> idsAndMessages
-  publishResult <- publish messages
+  publishResult <- publish $ rights maybeMessages
   acknowledge $ succeeded publishResult
   return ()

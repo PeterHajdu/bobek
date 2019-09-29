@@ -2,6 +2,7 @@
 
 module FakeEnvironment(FakeEnvironment(..), Environment(..), runMoveMessages) where
 
+import ReceiveId(ReceiveId)
 import Message(Message)
 import Mover
 import Source
@@ -13,7 +14,7 @@ runMoveMessages :: Environment -> Environment
 runMoveMessages env = execState (run moveMessages) env
 
 data Environment = MkEnv {
-    toReceive :: [Either SourceError (ReceiveId, Message)]
+    toReceive :: [Either SourceError Message]
   , acknowledgedMessages :: [ReceiveId]
   , published :: [Message]
   , publishResults :: PublishResult
@@ -23,8 +24,8 @@ newtype FakeEnvironment a = MkFakeEnvironment {run :: State Environment a} deriv
 
 instance Source FakeEnvironment where
   receive n = do
-    (MkEnv messages _ _ _) <- get
-    return (take n messages)
+    env <- get
+    return (take n (toReceive env))
   acknowledge ackIds = modify' (\env -> env {acknowledgedMessages = ackIds})
 
 instance Destination FakeEnvironment where
