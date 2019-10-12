@@ -47,6 +47,7 @@ executable bobek
                      , ReceiveId
                      , Env
                      , RabbitMqEnv
+                     , FileEnv
   build-depends:       base >=4.10
                      , amqp
                      , bytestring
