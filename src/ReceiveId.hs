@@ -1,3 +1,5 @@
 module ReceiveId(ReceiveId(..)) where
 
-newtype ReceiveId = MkReceiveId Int deriving (Eq, Show) --todo: Integer?
+import Data.Word
+
+newtype ReceiveId = MkReceiveId Word64 deriving (Eq, Show)

@@ -1,1 +1,1 @@
- * use newtype instead of data where possible
+ * error handling in rabbitmqenv

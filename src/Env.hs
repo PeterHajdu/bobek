@@ -1,13 +1,14 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
-module Env(Env(..), App(..)) where
+module Env(Env(..), App(..), runMover) where
 
+import Mover
 import Source
 import Destination
 import ReceiveId
 import Message
 import Control.Monad.Trans.Reader (ReaderT)
-import Control.Monad.Reader (MonadReader, liftIO, ask, MonadIO)
+import Control.Monad.Reader (MonadReader, liftIO, ask, MonadIO, runReaderT)
 
 data Env = MkEnv
   { envPublish :: [Message] -> IO PublishResult
@@ -29,3 +30,6 @@ instance Source App where
   acknowledge ids = do
     env <- ask
     liftIO $ (envAcknowledge env) ids
+
+runMover :: Env -> IO ()
+runMover = runReaderT (run moveMessages)
