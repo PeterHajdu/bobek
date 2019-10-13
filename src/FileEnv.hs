@@ -9,12 +9,12 @@ import qualified Data.ByteString.Char8 as BS(getLine, hPutStrLn)
 
 import System.IO
 
-recv :: Int -> IO [Either SourceError Message]
-recv _ = do
+recv :: IO (Either SourceError Message)
+recv = do
   body <- BS.getLine
-  return $ [Right $ MkMessage (MkReceiveId 0) body]
+  return $ Right $ MkMessage (MkReceiveId 0) body
 
-createFileSource :: IO (Maybe (Int -> IO [Either SourceError Message], [ReceiveId] -> IO ()))
+createFileSource :: IO (Maybe (IO (Either SourceError Message), [ReceiveId] -> IO ()))
 createFileSource = return $ Just (recv, (const $ return ()))
 
 writeToFile :: Handle -> [Message] -> IO PublishResult

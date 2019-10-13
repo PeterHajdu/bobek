@@ -12,7 +12,7 @@ import Control.Monad.Reader (MonadReader, liftIO, ask, MonadIO, runReaderT)
 
 data Env = MkEnv
   { envPublish :: [Message] -> IO PublishResult
-  , envReceive :: Int -> IO [Either SourceError Message]
+  , envReceive :: IO (Either SourceError Message)
   , envAcknowledge :: [ReceiveId] -> IO ()
   }
 
@@ -24,9 +24,9 @@ instance Destination App where
     liftIO $ (envPublish env) msgs
 
 instance Source App where
-  receive n = do
+  receive = do
     env <- ask
-    liftIO $ (envReceive env) n
+    liftIO $ envReceive env
   acknowledge ids = do
     env <- ask
     liftIO $ (envAcknowledge env) ids

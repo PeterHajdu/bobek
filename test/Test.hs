@@ -27,9 +27,9 @@ someSucceeds succeededIds = let failedIds = filter (flip elem $ succeededIds) te
 main :: IO ()
 main = hspec $ do
   describe "moveMessages" $ do
-    it "should send messages received from the source" $ do
+    it "should send message received from the source" $ do
       let result = runMoveMessages (MkEnv testMessagesToReceive [] [] publishSuccess)
-      (published result) `shouldBe` testMessages
+      (published result) `shouldBe` [(head testMessages)]
 
     it "should acknowledge published messages" $ do
       let result = runMoveMessages (MkEnv testMessagesToReceive [] [] publishSuccess)

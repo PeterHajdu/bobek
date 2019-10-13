@@ -35,10 +35,10 @@ optionParser = MkOpts
          <> short 'q'
          <> help "source queue")
 
-printError :: IO ()
-printError = putStrLn "Unable to initialize rabbitmq environment."
+printError :: String -> IO ()
+printError errorMsg = putStrLn $ "Unable to initialize rabbitmq environment: " ++ errorMsg
 
-createEnv :: ([Message] -> IO PublishResult) -> ((Int -> IO [Either SourceError Message]), ([ReceiveId] -> IO ())) -> Env
+createEnv :: ([Message] -> IO PublishResult) -> ((IO (Either SourceError Message)), ([ReceiveId] -> IO ())) -> Env
 createEnv pub (rec, ack) = MkEnv pub rec ack
 
 main :: IO ()
@@ -46,4 +46,4 @@ main = do
   opts <- execParser (info optionParser (fullDesc <> progDesc "rabbitmq swiss army knife"))
   maybePublisher <- createRabbitMqDestination AMQP.defaultConnectionOpts (exchange opts) (routingKey opts)
   maybeSource <- createRabbitMqSource AMQP.defaultConnectionOpts (sourceQueue opts)
-  maybe printError runMover (createEnv <$> maybePublisher <*> maybeSource)
+  either printError runMover (createEnv <$> maybePublisher <*> maybeSource)

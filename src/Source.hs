@@ -6,6 +6,6 @@ import ReceiveId(ReceiveId)
 newtype SourceError = MkSourceError String deriving Show
 
 class Monad m => Source m where
-  receive :: Int -> m [Either SourceError Message]
+  receive :: m (Either SourceError Message)
   acknowledge :: [ReceiveId] -> m ()
 

@@ -7,7 +7,7 @@ import Data.Either (rights)
 
 moveMessages :: (Source m, Destination m) => m ()
 moveMessages = do
-  maybeMessages <- receive 100
-  publishResult <- publish $ rights maybeMessages
+  maybeMessage <- receive
+  publishResult <- either (const $ return (MkPublishResult [] [])) (\message -> publish [message]) maybeMessage
   acknowledge $ succeeded publishResult
   return ()

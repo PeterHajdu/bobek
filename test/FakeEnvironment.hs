@@ -23,9 +23,9 @@ data Environment = MkEnv {
 newtype FakeEnvironment a = MkFakeEnvironment {run :: State Environment a} deriving (Functor, Applicative, Monad, MonadState Environment)
 
 instance Source FakeEnvironment where
-  receive n = do
+  receive = do
     env <- get
-    return (take n (toReceive env))
+    return (head $ toReceive env)
   acknowledge ackIds = modify' (\env -> env {acknowledgedMessages = ackIds})
 
 instance Destination FakeEnvironment where
