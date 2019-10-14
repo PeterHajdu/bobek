@@ -17,6 +17,7 @@ test-suite test
   build-depends:       base >=4.10
                      , hspec
                      , mtl
+                     , safe
                      , bytestring
   other-modules:       FakeEnvironment
                      , Source

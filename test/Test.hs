@@ -28,14 +28,14 @@ main :: IO ()
 main = hspec $ do
   describe "moveMessages" $ do
     it "should send message received from the source" $ do
-      let result = runMoveMessages (MkEnv testMessagesToReceive [] [] publishSuccess)
-      (published result) `shouldBe` [(head testMessages)]
+      let result = runMoveMessages (MkEnv testMessagesToReceive [] [] [publishSuccess])
+      (published result) `shouldBe` [[(head testMessages)]]
 
     it "should acknowledge published messages" $ do
-      let result = runMoveMessages (MkEnv testMessagesToReceive [] [] publishSuccess)
-      (acknowledgedMessages result) `shouldBe` testIds
+      let result = runMoveMessages (MkEnv testMessagesToReceive [] [] [publishSuccess])
+      (acknowledgedMessages result) `shouldBe` [testIds]
 
     it "should acknowledge messages only if publishing succeeds" $ do
       let succeededIds = [MkReceiveId 10, MkReceiveId 20]
-      let result = runMoveMessages (MkEnv testMessagesToReceive [] [] (someSucceeds succeededIds))
-      (acknowledgedMessages result) `shouldBe` succeededIds
+      let result = runMoveMessages (MkEnv testMessagesToReceive [] [] [someSucceeds succeededIds])
+      (acknowledgedMessages result) `shouldBe` [succeededIds]
