@@ -49,6 +49,7 @@ executable bobek
                      , Env
                      , RabbitMqEnv
                      , FileEnv
+                     , OptParse
   build-depends:       base >=4.10
                      , amqp
                      , bytestring
