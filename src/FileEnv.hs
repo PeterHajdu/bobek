@@ -5,21 +5,23 @@ import Source
 import Destination
 import ReceiveId
 
-import qualified Data.ByteString.Char8 as BS(getLine, hPutStrLn, ByteString)
+import qualified Data.ByteString.Char8 as BS(hGetLine, hPutStrLn, ByteString)
 
-import System.IO(Handle, IOMode(AppendMode), openFile, hFlush)
+import System.IO(Handle, IOMode(ReadMode, AppendMode), openFile, hFlush)
 
 import Control.Exception(IOException, try)
 import Data.Bifunctor(bimap)
 import Data.Either(lefts, rights)
 
-recv :: IO (Either SourceError Message)
-recv = do
-  maybeBody <- try $ BS.getLine :: IO (Either IOException BS.ByteString)
+recv :: Handle -> IO (Either SourceError Message)
+recv handle = do
+  maybeBody <- try $ BS.hGetLine handle :: IO (Either IOException BS.ByteString)
   return $ bimap (MkSourceError . show) (MkMessage (MkReceiveId 0)) maybeBody
 
-createFileSource :: IO (Maybe (IO (Either SourceError Message), [ReceiveId] -> IO ()))
-createFileSource = return $ Just (recv, (const $ return ()))
+createFileSource :: FilePath -> IO (Either String (IO (Either SourceError Message), [ReceiveId] -> IO ()))
+createFileSource filePath = do
+  maybeHandle <- try $ openFile filePath ReadMode :: IO (Either IOException Handle)
+  return $ bimap show (\handle -> (recv handle, const $ return ())) maybeHandle
 
 writeToFile :: Handle -> [Message] -> IO PublishResult
 writeToFile handle messages = do
