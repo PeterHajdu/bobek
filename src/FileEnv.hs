@@ -5,27 +5,34 @@ import Source
 import Destination
 import ReceiveId
 
-import qualified Data.ByteString.Char8 as BS(getLine, hPutStrLn)
+import qualified Data.ByteString.Char8 as BS(getLine, hPutStrLn, ByteString)
 
-import System.IO
+import System.IO(Handle, IOMode(AppendMode), openFile, hFlush)
+
+import Control.Exception(IOException, try)
+import Data.Bifunctor(bimap)
+import Data.Either(lefts, rights)
 
 recv :: IO (Either SourceError Message)
 recv = do
-  body <- BS.getLine
-  return $ Right $ MkMessage (MkReceiveId 0) body
+  maybeBody <- try $ BS.getLine :: IO (Either IOException BS.ByteString)
+  return $ bimap (MkSourceError . show) (MkMessage (MkReceiveId 0)) maybeBody
 
 createFileSource :: IO (Maybe (IO (Either SourceError Message), [ReceiveId] -> IO ()))
 createFileSource = return $ Just (recv, (const $ return ()))
 
 writeToFile :: Handle -> [Message] -> IO PublishResult
 writeToFile handle messages = do
-  let messageBodies = message <$> messages
-  let messageIds = receiveId <$> messages
-  _ <- traverse (BS.hPutStrLn handle) messageBodies
+  results <- traverse writeMessage messages
   hFlush handle
-  return $ MkPublishResult [] messageIds
+  return $ MkPublishResult (lefts results) (rights results)
+  where writeMessage :: Message -> IO (Either ReceiveId ReceiveId)
+        writeMessage msg = do
+          result <- try $ BS.hPutStrLn handle (message msg) :: IO (Either IOException ())
+          let rid = receiveId msg
+          return $ bimap (const rid) (const rid) result
 
-createFileDestination :: FilePath -> IO (Maybe ([Message] -> IO PublishResult))
+createFileDestination :: FilePath -> IO (Either String ([Message] -> IO PublishResult))
 createFileDestination filePath = do
-  handle <- openFile filePath AppendMode
-  return $ Just $ writeToFile handle
+  maybeHandle <- try $ openFile filePath AppendMode :: IO (Either IOException Handle)
+  return $ bimap show writeToFile maybeHandle
