@@ -11,7 +11,6 @@ module OptParse(
 import Options.Applicative
 import Data.Text
 import Data.String(IsString)
-import Control.Applicative
 
 newtype URI = MkUri Text deriving(Data.String.IsString, Show)
 newtype Path = MkPath Text deriving(Data.String.IsString, Show)
