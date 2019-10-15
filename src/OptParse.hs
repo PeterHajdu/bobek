@@ -1,5 +1,11 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-module OptParse(optionParser) where
+module OptParse(
+    optionParser,
+    Opts(..),
+    DestinationOpts(..),
+    Path(..),
+    URI(..)
+) where
 
 import Options.Applicative
 import Data.Text
@@ -9,16 +15,16 @@ newtype URI = MkUri Text deriving(Data.String.IsString, Show)
 newtype Path = MkPath Text deriving(Data.String.IsString, Show)
 
 data Opts = MkOpts
-    { source :: Source
-    , destination :: Destination
+    { source :: SourceOpts
+    , destination :: DestinationOpts
     } deriving(Show)
 
-data Source
+data SourceOpts
     = AmqpSource URI Text
     | SrcFile Path
     deriving(Show)
 
-data Destination
+data DestinationOpts
     = AmqpDestination URI Text
     | DestFile Path
     deriving(Show)
@@ -28,7 +34,7 @@ optionParser = MkOpts
     <$> (srcAmqpOpt <|> srcFileOpt)
     <*> (destAmqpOpt <|> destFileOpt)
 
-srcAmqpOpt :: Parser Source
+srcAmqpOpt :: Parser SourceOpts
 srcAmqpOpt = AmqpSource
     <$> strOption
         (   long "source-amqp"
@@ -43,7 +49,7 @@ srcAmqpOpt = AmqpSource
         <>  help "Source queue."
         )
 
-srcFileOpt :: Parser Source
+srcFileOpt :: Parser SourceOpts
 srcFileOpt = SrcFile
     <$> strOption
         (   long "input-file"
@@ -51,7 +57,7 @@ srcFileOpt = SrcFile
         <> metavar "FILE"
         <>  help "Source/input file path" )
 
-destAmqpOpt :: Parser Destination
+destAmqpOpt :: Parser DestinationOpts
 destAmqpOpt = AmqpDestination
     <$> strOption
         (  long "destination-amqp"
@@ -65,7 +71,7 @@ destAmqpOpt = AmqpDestination
         <> metavar "DEST_EXCHANGE"
         <> help "Destination exchange" )
 
-destFileOpt :: Parser Destination
+destFileOpt :: Parser DestinationOpts
 destFileOpt = DestFile
     <$> strOption
         ( long "destination-file"
