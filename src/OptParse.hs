@@ -3,6 +3,7 @@ module OptParse(
     optionParser,
     Opts(..),
     DestinationOpts(..),
+    SourceOpts(..),
     Path(..),
     URI(..)
 ) where
