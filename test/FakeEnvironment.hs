@@ -9,7 +9,7 @@ import Source
 import Destination
 import Control.Monad.State.Strict (State, execState)
 import Control.Monad.State (MonadState, get, put)
-import Safe(tailSafe)
+import Safe(tailSafe, headDef)
 
 runMoveMessages :: Environment -> Environment
 runMoveMessages env = execState (run moveMessages) env
@@ -29,7 +29,7 @@ instance Source FakeEnvironment where
     let toRec = toReceive oldEnv
     let newEnv = oldEnv {toReceive = tailSafe toRec}
     put newEnv
-    return (head toRec)
+    return (headDef (Left NMREmptyQueue) toRec)
 
   acknowledge ackIds = do
     env@(MkEnv _ acks _ _) <- get

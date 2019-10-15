@@ -17,25 +17,26 @@ testIds = receiveId <$> testMessages
 testMessagesToReceive :: [Either NoMessageReason Message]
 testMessagesToReceive = Right <$> testMessages
 
-publishSuccess :: PublishResult
-publishSuccess = MkPublishResult [] testIds
+publishSuccesses :: [PublishResult]
+publishSuccesses = (MkPublishResult []) <$> ((:[]) <$> testIds)
 
-someSucceeds :: [ReceiveId] -> PublishResult
-someSucceeds succeededIds = let failedIds = filter (flip elem $ succeededIds) testIds
-                           in MkPublishResult failedIds succeededIds
+someSucceeds :: [ReceiveId] -> [PublishResult]
+someSucceeds succeededIds = (\rid -> if elem rid succeededIds
+                                     then MkPublishResult [] [rid]
+                                     else MkPublishResult [rid] []) <$> testIds
 
 main :: IO ()
 main = hspec $ do
   describe "moveMessages" $ do
     it "should send message received from the source" $ do
-      let result = runMoveMessages (MkEnv testMessagesToReceive [] [] [publishSuccess])
-      (published result) `shouldBe` [[(head testMessages)]]
+      let result = runMoveMessages (MkEnv testMessagesToReceive [] [] publishSuccesses)
+      (published result) `shouldBe` (:[]) <$> testMessages
 
     it "should acknowledge published messages" $ do
-      let result = runMoveMessages (MkEnv testMessagesToReceive [] [] [publishSuccess])
-      (acknowledgedMessages result) `shouldBe` [testIds]
+      let result = runMoveMessages (MkEnv testMessagesToReceive [] [] publishSuccesses)
+      (acknowledgedMessages result) `shouldBe` (:[]) <$> testIds
 
     it "should acknowledge messages only if publishing succeeds" $ do
       let succeededIds = [MkReceiveId 10, MkReceiveId 20]
-      let result = runMoveMessages (MkEnv testMessagesToReceive [] [] [someSucceeds succeededIds])
-      (acknowledgedMessages result) `shouldBe` [succeededIds]
+      let result = runMoveMessages (MkEnv testMessagesToReceive [] [] (someSucceeds succeededIds))
+      (acknowledgedMessages result) `shouldBe` ((:[]) <$> succeededIds)
