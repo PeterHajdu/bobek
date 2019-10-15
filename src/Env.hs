@@ -12,7 +12,7 @@ import Control.Monad.Reader (MonadReader, liftIO, ask, MonadIO, runReaderT)
 
 data Env = MkEnv
   { envPublish :: [Message] -> IO PublishResult
-  , envReceive :: IO (Either SourceError Message)
+  , envReceive :: IO (Either NoMessageReason Message)
   , envAcknowledge :: [ReceiveId] -> IO ()
   }
 

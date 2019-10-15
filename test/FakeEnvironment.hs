@@ -15,7 +15,7 @@ runMoveMessages :: Environment -> Environment
 runMoveMessages env = execState (run moveMessages) env
 
 data Environment = MkEnv {
-    toReceive :: [Either SourceError Message]
+    toReceive :: [Either NoMessageReason Message]
   , acknowledgedMessages :: [[ReceiveId]]
   , published :: [[Message]]
   , publishResults :: [PublishResult]

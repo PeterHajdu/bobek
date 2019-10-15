@@ -14,7 +14,7 @@ testMessages = (\rid -> (MkMessage (MkReceiveId rid) "test message")) <$> [1..10
 testIds :: [ReceiveId]
 testIds = receiveId <$> testMessages
 
-testMessagesToReceive :: [Either SourceError Message]
+testMessagesToReceive :: [Either NoMessageReason Message]
 testMessagesToReceive = Right <$> testMessages
 
 publishSuccess :: PublishResult

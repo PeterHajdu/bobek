@@ -38,11 +38,11 @@ rabbitMessageFromMessage :: Message -> AMQP.Message
 rabbitMessageFromMessage (MkMessage _ body) =
   AMQP.newMsg {AMQP.msgBody = fromStrict body, AMQP.msgDeliveryMode = Just AMQP.Persistent}
 
-rabbitReceive :: AMQP.Channel -> Text -> IO (Either SourceError Message)
+rabbitReceive :: AMQP.Channel -> Text -> IO (Either NoMessageReason Message)
 rabbitReceive channel queue = do
   maybeMessage <- (try $ AMQP.getMsg channel AMQP.Ack queue :: IO (Either AMQP.AMQPException (Maybe (AMQP.Message, AMQP.Envelope))))
-  let flattenedMaybeMessage = join $ (maybe (Left "Unable to read message from queue.") (Right)) <$> (left show maybeMessage)
-  return $ bimap MkSourceError messageFromRabbitMessage flattenedMaybeMessage
+  let msgWithFlattenedError = join $ bimap (NMRError . show) (maybe (Left NMREmptyQueue) Right) maybeMessage
+  return $ messageFromRabbitMessage <$> msgWithFlattenedError
 
 rabbitAcknowledge :: AMQP.Channel -> [ReceiveId] -> IO ()
 rabbitAcknowledge channel ids = void $ traverse ackMessage ids
@@ -56,7 +56,7 @@ createChannel connOpts = runExceptT $ do
   maybeChan <- liftIO $ (try $ AMQP.openChannel conn :: IO (Either AMQP.AMQPException AMQP.Channel))
   except $ left show maybeChan
 
-createRabbitMqSource :: AMQP.ConnectionOpts -> Text -> IO (Either String (IO (Either SourceError Message), [ReceiveId] -> IO ()))
+createRabbitMqSource :: AMQP.ConnectionOpts -> Text -> IO (Either String (IO (Either NoMessageReason Message), [ReceiveId] -> IO ()))
 createRabbitMqSource connOpts queue = do
   maybeChan <- createChannel connOpts
   return $ bimap show (\chan -> (rabbitReceive chan queue, rabbitAcknowledge chan)) maybeChan

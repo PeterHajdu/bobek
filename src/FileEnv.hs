@@ -13,12 +13,12 @@ import Control.Exception(IOException, try)
 import Data.Bifunctor(bimap)
 import Data.Either(lefts, rights)
 
-recv :: Handle -> IO (Either SourceError Message)
+recv :: Handle -> IO (Either NoMessageReason Message)
 recv handle = do
   maybeBody <- try $ BS.hGetLine handle :: IO (Either IOException BS.ByteString)
-  return $ bimap (MkSourceError . show) (MkMessage (MkReceiveId 0)) maybeBody
+  return $ bimap (NMRError . show) (MkMessage (MkReceiveId 0)) maybeBody
 
-createFileSource :: FilePath -> IO (Either String (IO (Either SourceError Message), [ReceiveId] -> IO ()))
+createFileSource :: FilePath -> IO (Either String (IO (Either NoMessageReason Message), [ReceiveId] -> IO ()))
 createFileSource filePath = do
   maybeHandle <- try $ openFile filePath ReadMode :: IO (Either IOException Handle)
   return $ bimap show (\handle -> (recv handle, const $ return ())) maybeHandle

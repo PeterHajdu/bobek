@@ -18,11 +18,11 @@ import Data.Semigroup ((<>))
 printError :: String -> IO ()
 printError errorMsg = putStrLn $ "Unable to initialize rabbitmq environment: " ++ errorMsg
 
-createEnv :: ([Message] -> IO PublishResult) -> ((IO (Either SourceError Message)), ([ReceiveId] -> IO ())) -> Env
+createEnv :: ([Message] -> IO PublishResult) -> ((IO (Either NoMessageReason Message)), ([ReceiveId] -> IO ())) -> Env
 createEnv pub (rec, ack) = MkEnv pub rec ack
 
 type PublisherFunction = Either String ([Message] -> IO PublishResult)
-type SourceFunctions = Either String (IO (Either SourceError Message), [ReceiveId] -> IO ())
+type SourceFunctions = Either String (IO (Either NoMessageReason Message), [ReceiveId] -> IO ())
 
 createDestination :: DestinationOpts -> IO PublisherFunction
 createDestination (DestFile (MkPath path)) = createFileDestination (unpack path)

@@ -1,11 +1,14 @@
-module Source(Source(..), SourceError(..)) where
+module Source(Source(..), NoMessageReason(..)) where
 
 import Message(Message)
 import ReceiveId(ReceiveId)
 
-newtype SourceError = MkSourceError String deriving Show
+data NoMessageReason =
+    NMRError String
+  | NMREmptyQueue
+  deriving Show
 
 class Monad m => Source m where
-  receive :: m (Either SourceError Message)
+  receive :: m (Either NoMessageReason Message)
   acknowledge :: [ReceiveId] -> m ()
 
