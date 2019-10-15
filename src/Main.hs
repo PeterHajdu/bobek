@@ -25,8 +25,10 @@ type Publisher = IO (Either String ([Message] -> IO PublishResult))
 
 createDestination :: DestinationOpts -> Publisher
 createDestination (DestFile (MkPath path)) = createFileDestination (unpack path)
-createDestination (AmqpDestination (MkUri uri) exchange) =
-    createRabbitMqDestination (AMQP.fromURI $ unpack uri) (exchange) ("TODO routingkey")
+createDestination (AmqpDestination (MkUri uri) exchange (Just routingKey)) =
+    createRabbitMqDestination (AMQP.fromURI $ unpack uri) (exchange) (routingKey)
+-- TODO: case for routingKey=Nothing
+
 
 main :: IO ()
 main = do

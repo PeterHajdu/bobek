@@ -10,6 +10,7 @@ module OptParse(
 import Options.Applicative
 import Data.Text
 import Data.String(IsString)
+import Control.Applicative
 
 newtype URI = MkUri Text deriving(Data.String.IsString, Show)
 newtype Path = MkPath Text deriving(Data.String.IsString, Show)
@@ -25,7 +26,7 @@ data SourceOpts
     deriving(Show)
 
 data DestinationOpts
-    = AmqpDestination URI Text
+    = AmqpDestination URI Text (Maybe Text) -- connection-uri, exchange, maybe routingkey
     | DestFile Path
     deriving(Show)
 
@@ -70,6 +71,12 @@ destAmqpOpt = AmqpDestination
         <> short 'e'
         <> metavar "DEST_EXCHANGE"
         <> help "Destination exchange" )
+    <*> ( optional $ strOption
+            ( long "routing-key"
+            <> short 'r'
+            <> metavar "DEST_ROUTING_KEY"
+            <> help "Override routing key for publishing" )
+        )
 
 destFileOpt :: Parser DestinationOpts
 destFileOpt = DestFile
