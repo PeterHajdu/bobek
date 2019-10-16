@@ -42,10 +42,10 @@ messageFromRabbitMessage :: (AMQP.Message, AMQP.Envelope) -> Message
 messageFromRabbitMessage (rabbitMessage, envelope) =
   let rid = MkReceiveId (AMQP.envDeliveryTag envelope)
       body = toStrict $ AMQP.msgBody rabbitMessage
-   in MkMessage rid body
+   in MkMessage rid (AMQP.envRoutingKey envelope) body
 
 rabbitMessageFromMessage :: Message -> AMQP.Message
-rabbitMessageFromMessage (MkMessage _ body) =
+rabbitMessageFromMessage (MkMessage _ _ body) =
   AMQP.newMsg {AMQP.msgBody = fromStrict body, AMQP.msgDeliveryMode = Just AMQP.Persistent}
 
 rabbitReceive :: AMQP.Channel -> T.Text -> IO (Either NoMessageReason Message)

@@ -17,7 +17,8 @@ import Data.Either(lefts, rights)
 recv :: Handle -> IO (Either NoMessageReason Message)
 recv handle = do
   maybeBody <- try $ BS.hGetLine handle :: IO (Either IOException BS.ByteString)
-  return $ bimap mapError (MkMessage (MkReceiveId 0)) maybeBody
+  let routingKey = "meta."
+  return $ bimap mapError (MkMessage (MkReceiveId 0) routingKey) maybeBody --todo: hardcoded until format is finalized
   where mapError e = if isEOFError e then NMREmptyQueue else NMRError $ show e
 
 createFileSource :: FilePath -> IO (Either String (IO (Either NoMessageReason Message), [ReceiveId] -> IO ()))

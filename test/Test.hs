@@ -8,7 +8,7 @@ import Source
 import Destination
 
 testMessages :: [Message]
-testMessages = (\rid -> (MkMessage (MkReceiveId rid) "test message")) <$> [1..100]
+testMessages = (\rid -> (MkMessage (MkReceiveId rid) "routing key" "test message")) <$> [1..100]
 
 
 testIds :: [ReceiveId]

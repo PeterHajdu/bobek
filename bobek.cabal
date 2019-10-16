@@ -19,6 +19,7 @@ test-suite test
                      , mtl
                      , safe
                      , bytestring
+                     , text
   other-modules:       FakeEnvironment
                      , Source
                      , Destination
