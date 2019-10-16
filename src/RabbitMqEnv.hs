@@ -1,13 +1,13 @@
 module RabbitMqEnv(createRabbitMqSource, createRabbitMqDestination) where
 
-import Message
+import qualified Message as M
 import Source
 import Destination
 import ReceiveId
 
 import Data.List (partition)
 import Data.IntSet (IntSet, member)
-import Data.Maybe (fromJust)
+import Data.Maybe (fromJust, fromMaybe)
 import Data.Either(lefts, rights)
 import qualified Data.Text as T
 import Data.ByteString.Lazy (toStrict, fromStrict)
@@ -21,16 +21,18 @@ import Control.Exception(try)
 import Control.Arrow(left)
 import Data.Bifunctor(bimap)
 
-rabbitPublish :: AMQP.Channel -> T.Text -> T.Text -> [Message] -> IO PublishResult
-rabbitPublish channel exchange routingkey messages = do
+rabbitPublish :: AMQP.Channel -> T.Text -> Maybe T.Text -> [M.Message] -> IO PublishResult
+rabbitPublish channel exchange maybeRoutingKey messages = do
   publishResult <- traverse (\msg -> publishToRabbitMq msg) messages
   confirmed <- acked <$> AMQP.waitForConfirms channel --todo: handle exceptions
   let (ok, nok) = partition (\(pid, _) -> member pid confirmed) (rights publishResult)
   return $ MkPublishResult (lefts publishResult ++ (snd <$> nok)) (snd <$> ok)
-  where publishToRabbitMq :: Message -> IO (Either ReceiveId (Int, ReceiveId))
+  where publishToRabbitMq :: M.Message -> IO (Either ReceiveId (Int, ReceiveId))
         publishToRabbitMq msg = do
-          result <- try $ AMQP.publishMsg channel exchange routingkey (rabbitMessageFromMessage msg) :: IO (Either AMQP.AMQPException (Maybe Int))
-          let rid = receiveId msg
+          let (rabbitMessage, routingKeyInMessage) = extractMessageRoutingKey msg
+          let routingKey = fromMaybe routingKeyInMessage maybeRoutingKey
+          result <- try $ AMQP.publishMsg channel exchange routingKey rabbitMessage :: IO (Either AMQP.AMQPException (Maybe Int))
+          let rid = M.receiveId msg
           return $ bimap (const rid) (\seqNum -> (fromJust seqNum, rid)) result
 
         acked :: AMQP.ConfirmationResult -> IntSet
@@ -38,17 +40,17 @@ rabbitPublish channel exchange routingkey messages = do
                       AMQP.Complete (ok, _) -> ok
                       AMQP.Partial (ok, _, _) -> ok
 
-messageFromRabbitMessage :: (AMQP.Message, AMQP.Envelope) -> Message
+messageFromRabbitMessage :: (AMQP.Message, AMQP.Envelope) -> M.Message
 messageFromRabbitMessage (rabbitMessage, envelope) =
   let rid = MkReceiveId (AMQP.envDeliveryTag envelope)
       body = toStrict $ AMQP.msgBody rabbitMessage
-   in MkMessage rid (AMQP.envRoutingKey envelope) body
+   in M.MkMessage rid (AMQP.envRoutingKey envelope) body
 
-rabbitMessageFromMessage :: Message -> AMQP.Message
-rabbitMessageFromMessage (MkMessage _ _ body) =
-  AMQP.newMsg {AMQP.msgBody = fromStrict body, AMQP.msgDeliveryMode = Just AMQP.Persistent}
+extractMessageRoutingKey :: M.Message -> (AMQP.Message, T.Text)
+extractMessageRoutingKey (M.MkMessage _ routingKey body) =
+  (AMQP.newMsg {AMQP.msgBody = fromStrict body, AMQP.msgDeliveryMode = Just AMQP.Persistent}, routingKey)
 
-rabbitReceive :: AMQP.Channel -> T.Text -> IO (Either NoMessageReason Message)
+rabbitReceive :: AMQP.Channel -> T.Text -> IO (Either NoMessageReason M.Message)
 rabbitReceive channel queue = do
   maybeMessage <- (try $ AMQP.getMsg channel AMQP.Ack queue :: IO (Either AMQP.AMQPException (Maybe (AMQP.Message, AMQP.Envelope))))
   let msgWithFlattenedError = join $ bimap (NMRError . show) (maybe (Left NMREmptyQueue) Right) maybeMessage
@@ -66,12 +68,12 @@ createChannel connOpts = runExceptT $ do
   maybeChan <- liftIO $ (try $ AMQP.openChannel conn :: IO (Either AMQP.AMQPException AMQP.Channel))
   except $ left show maybeChan
 
-createRabbitMqSource :: AMQP.ConnectionOpts -> T.Text -> IO (Either String (IO (Either NoMessageReason Message), [ReceiveId] -> IO ()))
+createRabbitMqSource :: AMQP.ConnectionOpts -> T.Text -> IO (Either String (IO (Either NoMessageReason M.Message), [ReceiveId] -> IO ()))
 createRabbitMqSource connOpts queue = do
   maybeChan <- createChannel connOpts
   return $ bimap show (\chan -> (rabbitReceive chan queue, rabbitAcknowledge chan)) maybeChan
 
-createRabbitMqDestination :: AMQP.ConnectionOpts -> T.Text -> T.Text -> IO (Either String ([Message] -> IO PublishResult))
+createRabbitMqDestination :: AMQP.ConnectionOpts -> T.Text -> Maybe T.Text -> IO (Either String ([M.Message] -> IO PublishResult))
 createRabbitMqDestination connOpts exchange routingKey = runExceptT $ do
   maybeChan <- liftIO $ createChannel connOpts
   channel <- except $ left show maybeChan

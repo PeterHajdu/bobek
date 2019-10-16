@@ -26,9 +26,8 @@ type SourceFunctions = Either String (IO (Either NoMessageReason Message), [Rece
 
 createDestination :: DestinationOpts -> IO PublisherFunction
 createDestination (DestFile (MkPath path)) = createFileDestination (unpack path)
-createDestination (AmqpDestination (MkUri uri) exchange (Just routingKey)) =
+createDestination (AmqpDestination (MkUri uri) exchange routingKey) =
     createRabbitMqDestination (AMQP.fromURI $ unpack uri) (exchange) (routingKey)
--- TODO: case for routingKey=Nothing
 
 createSource :: SourceOpts -> IO SourceFunctions
 createSource (SrcFile (MkPath path)) = createFileSource (unpack path)
