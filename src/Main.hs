@@ -3,7 +3,7 @@ module Main(main) where
 import Env
 import RabbitMqEnv
 import FileEnv
-import Message
+import qualified Message as M
 import Destination
 import Source
 import ReceiveId
@@ -18,16 +18,16 @@ import Data.Semigroup ((<>))
 printError :: String -> IO ()
 printError errorMsg = putStrLn $ "Unable to initialize rabbitmq environment: " ++ errorMsg
 
-createEnv :: ([Message] -> IO PublishResult) -> ((IO (Either NoMessageReason Message)), ([ReceiveId] -> IO ())) -> Env
+createEnv :: ([M.Message] -> IO PublishResult) -> ((IO (Either NoMessageReason M.Message)), ([ReceiveId] -> IO ())) -> Env
 createEnv pub (rec, ack) = MkEnv pub rec ack
 
-type PublisherFunction = Either String ([Message] -> IO PublishResult)
-type SourceFunctions = Either String (IO (Either NoMessageReason Message), [ReceiveId] -> IO ())
+type PublisherFunction = Either String ([M.Message] -> IO PublishResult)
+type SourceFunctions = Either String (IO (Either NoMessageReason M.Message), [ReceiveId] -> IO ())
 
 createDestination :: DestinationOpts -> IO PublisherFunction
 createDestination (DestFile (MkPath path)) = createFileDestination (unpack path)
 createDestination (AmqpDestination (MkUri uri) exchange routingKey) =
-    createRabbitMqDestination (AMQP.fromURI $ unpack uri) (exchange) (routingKey)
+    createRabbitMqDestination (AMQP.fromURI $ unpack uri) exchange routingKey
 
 createSource :: SourceOpts -> IO SourceFunctions
 createSource (SrcFile (MkPath path)) = createFileSource (unpack path)
