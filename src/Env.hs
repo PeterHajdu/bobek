@@ -7,6 +7,7 @@ import Source
 import Destination
 import ReceiveId
 import Message
+import Filter
 import Control.Monad.Trans.Reader (ReaderT)
 import Control.Monad.Reader (MonadReader, liftIO, ask, MonadIO, runReaderT)
 
@@ -14,6 +15,7 @@ data Env = MkEnv
   { envPublish :: [Message] -> IO PublishResult
   , envReceive :: IO (Either NoMessageReason Message)
   , envAcknowledge :: [ReceiveId] -> IO ()
+  , envFilterAction :: Message -> IO FilterAction
   }
 
 newtype App a = MkApp {run :: ReaderT Env IO a} deriving (Functor, Applicative, Monad, MonadReader Env, MonadIO)
@@ -30,6 +32,11 @@ instance Source App where
   acknowledge ids = do
     env <- ask
     liftIO $ (envAcknowledge env) ids
+
+instance Filter App where
+  filterAction msg = do
+    env <- ask
+    liftIO $ (envFilterAction env) msg
 
 runMover :: Env -> IO ()
 runMover = runReaderT (run moveMessages)

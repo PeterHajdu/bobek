@@ -23,6 +23,7 @@ test-suite test
   other-modules:       FakeEnvironment
                      , Source
                      , Destination
+                     , Filter
                      , Message
                      , Mover
                      , ReceiveId
@@ -47,6 +48,8 @@ executable bobek
                      , Destination
                      , Mover
                      , ReceiveId
+                     , Filter
+                     , ScriptFilter
                      , Env
                      , RabbitMqEnv
                      , FileEnv

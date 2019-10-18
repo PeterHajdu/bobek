@@ -1,1 +1,2 @@
  - handle exceptions during configmwait
+ - add logging

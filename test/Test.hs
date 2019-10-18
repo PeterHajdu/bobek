@@ -6,6 +6,7 @@ import FakeEnvironment
 import Message
 import Source
 import Destination
+import Filter
 
 testMessages :: [Message]
 testMessages = (\rid -> (MkMessage (MkReceiveId rid) "routing key" "test message")) <$> [1..100]
@@ -25,18 +26,27 @@ someSucceeds succeededIds = (\rid -> if elem rid succeededIds
                                      then MkPublishResult [] [rid]
                                      else MkPublishResult [rid] []) <$> testIds
 
+bothFilter :: [FilterAction]
+bothFilter = repeat CopyAndAck
+
 main :: IO ()
 main = hspec $ do
   describe "moveMessages" $ do
     it "should send message received from the source" $ do
-      let result = runMoveMessages (MkEnv testMessagesToReceive [] [] publishSuccesses)
-      (published result) `shouldBe` (:[]) <$> testMessages
+      let result = runMoveMessages (MkEnv testMessagesToReceive [] [] publishSuccesses bothFilter)
+      (published result) `shouldBe` pure <$> testMessages
 
     it "should acknowledge published messages" $ do
-      let result = runMoveMessages (MkEnv testMessagesToReceive [] [] publishSuccesses)
-      (acknowledgedMessages result) `shouldBe` (:[]) <$> testIds
+      let result = runMoveMessages (MkEnv testMessagesToReceive [] [] publishSuccesses bothFilter)
+      (acknowledgedMessages result) `shouldBe` pure <$> testIds
 
     it "should acknowledge messages only if publishing succeeds" $ do
       let succeededIds = [MkReceiveId 10, MkReceiveId 20]
-      let result = runMoveMessages (MkEnv testMessagesToReceive [] [] (someSucceeds succeededIds))
-      (acknowledgedMessages result) `shouldBe` ((:[]) <$> succeededIds)
+      let result = runMoveMessages (MkEnv testMessagesToReceive [] [] (someSucceeds succeededIds) bothFilter)
+      (acknowledgedMessages result) `shouldBe` pure <$> succeededIds
+
+    it "should acknowledge messages only if the filter asks for it" $ do
+      let onlyCopy = repeat Copy
+      let result = runMoveMessages (MkEnv testMessagesToReceive [] [] publishSuccesses onlyCopy)
+      (acknowledgedMessages result) `shouldBe` []
+

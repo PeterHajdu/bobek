@@ -18,6 +18,7 @@ newtype Path = MkPath Text deriving(Data.String.IsString, Show)
 data Opts = MkOpts
     { source :: SourceOpts
     , destination :: DestinationOpts
+    , filter :: Maybe FilePath
     } deriving(Show)
 
 data SourceOpts
@@ -34,6 +35,15 @@ optionParser :: Parser Opts
 optionParser = MkOpts
     <$> (srcAmqpOpt <|> srcFileOpt)
     <*> (destAmqpOpt <|> destFileOpt)
+    <*> filterOpt
+
+filterOpt :: Parser (Maybe FilePath)
+filterOpt = (optional $ strOption
+        (   long "filter"
+        <>  short 'f'
+        <>  metavar "SCRIPT"
+        <>  help "Filter script path.")
+        )
 
 srcAmqpOpt :: Parser SourceOpts
 srcAmqpOpt = AmqpSource
