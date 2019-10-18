@@ -7,7 +7,7 @@ import ReceiveId
 
 import Data.List (partition)
 import Data.IntSet (IntSet, member)
-import Data.Maybe (fromJust, fromMaybe)
+import Data.Maybe (fromMaybe)
 import Data.Either(lefts, rights)
 import qualified Data.Text as T
 import Data.ByteString.Lazy (toStrict, fromStrict)
@@ -33,12 +33,12 @@ rabbitPublish channel exchange maybeRoutingKey messages = do
           let routingKey = fromMaybe routingKeyInMessage maybeRoutingKey
           result <- try $ AMQP.publishMsg channel exchange routingKey rabbitMessage :: IO (Either AMQP.AMQPException (Maybe Int))
           let rid = M.receiveId msg
-          return $ bimap (const rid) (\seqNum -> (fromJust seqNum, rid)) result
+          return $ bimap (const rid) (\seqNum -> (fromMaybe (error "Sequence number should be present always.") seqNum, rid)) result
 
         acked :: AMQP.ConfirmationResult -> IntSet
         acked res = case res of
                       AMQP.Complete (ok, _) -> ok
-                      AMQP.Partial (ok, _, _) -> ok
+                      AMQP.Partial _ -> error "Impossible."
 
 messageFromRabbitMessage :: (AMQP.Message, AMQP.Envelope) -> M.Message
 messageFromRabbitMessage (rabbitMessage, envelope) =
