@@ -1,87 +1,65 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE DataKinds          #-}
+{-# LANGUAGE DeriveGeneric      #-}
+{-# LANGUAGE FlexibleInstances  #-}
+{-# LANGUAGE OverloadedStrings  #-}
+{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE TypeOperators      #-}
+
 module OptParse(
-    optionParser,
-    Opts(..),
-    DestinationOpts(..),
-    SourceOpts(..),
+    -- optionParser,
+    Args(..),
     Path(..),
-    URI(..)
+    Uri(..),
+    Queue(..),
+    Exchange(..),
+    RoutingKey(..),
+    areArgsValid
 ) where
 
-import Options.Applicative
 import Data.Text
-import Data.String(IsString)
+import Options.Generic
 
-newtype URI = MkUri Text deriving(Data.String.IsString, Show)
-newtype Path = MkPath Text deriving(Data.String.IsString, Show)
+newtype Path = Path Text deriving (Generic, Read, Show)
+instance ParseRecord Path
+instance ParseField Path
 
-data Opts = MkOpts
-    { source :: SourceOpts
-    , destination :: DestinationOpts
-    } deriving(Show)
+newtype Uri = Uri Text deriving (Generic, Read, Show)
+instance ParseRecord Uri
+instance ParseField Uri
 
-data SourceOpts
-    = AmqpSource URI Text
-    | SrcFile Path
-    deriving(Show)
+newtype Queue = Queue Text deriving (Generic, Read, Show)
+instance ParseRecord Queue
+instance ParseField Queue
 
-data DestinationOpts
-    = AmqpDestination URI Text (Maybe Text) -- connection-uri, exchange, maybe routingkey
-    | DestFile Path
-    deriving(Show)
+newtype Exchange = Exchange Text deriving (Generic, Read, Show)
+instance ParseRecord Exchange
+instance ParseField Exchange
 
-optionParser :: Parser Opts
-optionParser = MkOpts
-    <$> (srcAmqpOpt <|> srcFileOpt)
-    <*> (destAmqpOpt <|> destFileOpt)
+newtype RoutingKey = RoutingKey Text deriving (Generic, Read, Show)
+instance ParseRecord RoutingKey
+instance ParseField RoutingKey
 
-srcAmqpOpt :: Parser SourceOpts
-srcAmqpOpt = AmqpSource
-    <$> strOption
-        (   long "source-amqp"
-        <>  short 's'
-        <>  metavar "SRC_AMQP"
-        <>  help "Source AMQP URI. Example: TODO"
-        )
-    <*> strOption
-        (   long "source-queue"
-        <> short 'q'
-        <>  metavar "SRC_QUEUE"
-        <>  help "Source queue."
-        )
+data Args w = Args { src_file :: w ::: Maybe Path     <?> "Path to source file (instead of queue)."
+                   , src_uri :: w ::: Maybe Uri       <?> "URI to RabbitMq of source queue."
+                   , queue :: w ::: Maybe Queue       <?> "Name of source queue."
+                   ---------------------------------------------------------
+                   , dst_file :: w ::: Maybe Path     <?> "Path to destination file (instead of exchange)."
+                   , dst_uri :: w ::: Maybe Uri       <?> "URI to RabbitMq of destination exchange."
+                   , exchange :: w ::: Maybe Exchange <?> "Name of destination exchange."
+                   , key :: w ::: Maybe RoutingKey    <?> "Routing key to use with exchange (optional)."
+                   } deriving (Generic)
+instance ParseRecord (Args Wrapped)
+deriving instance Show (Args Unwrapped)
 
-srcFileOpt :: Parser SourceOpts
-srcFileOpt = SrcFile
-    <$> strOption
-        (   long "input-file"
-        <> short 'i'
-        <> metavar "FILE"
-        <>  help "Source/input file path" )
+isSrcValid :: Args Unwrapped -> Bool
+isSrcValid (Args (Just _) Nothing Nothing  _ _ _ _) = True
+isSrcValid (Args Nothing (Just _) (Just _) _ _ _ _) = True
+isSrcValid _ = False
 
-destAmqpOpt :: Parser DestinationOpts
-destAmqpOpt = AmqpDestination
-    <$> strOption
-        (  long "destination-amqp"
-        <> short 'd'
-        <> metavar "DEST_AMQP"
-        <> help "Destination AMQP URI. Example: TODO"
-        )
-    <*> strOption
-        ( long "exchange"
-        <> short 'e'
-        <> metavar "DEST_EXCHANGE"
-        <> help "Destination exchange" )
-    <*> ( optional $ strOption
-            ( long "routing-key"
-            <> short 'r'
-            <> metavar "DEST_ROUTING_KEY"
-            <> help "Override routing key for publishing" )
-        )
+isDestValid :: Args Unwrapped -> Bool
+isDestValid (Args _ _ _ (Just _) Nothing Nothing Nothing) = True
+isDestValid (Args _ _ _ Nothing (Just _) (Just _) _     ) = True
+isDestValid _ = False
 
-destFileOpt :: Parser DestinationOpts
-destFileOpt = DestFile
-    <$> strOption
-        ( long "destination-file"
-        <> short 'o'
-        <> metavar "DESTFILE"
-        <> help "Destination/output file path" )
+areArgsValid :: Args Unwrapped -> Bool
+areArgsValid args = isSrcValid args && isDestValid args

@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Main(main) where
 
 import Env
@@ -12,8 +14,7 @@ import Data.Text
 
 import qualified Network.AMQP as AMQP(fromURI)
 
-import Options.Applicative
-import Data.Semigroup ((<>))
+import Options.Generic
 
 printError :: String -> IO ()
 printError errorMsg = putStrLn $ "Unable to initialize rabbitmq environment: " ++ errorMsg
@@ -24,19 +25,32 @@ createEnv pub (rec, ack) = MkEnv pub rec ack
 type PublisherFunction = Either String ([M.Message] -> IO PublishResult)
 type SourceFunctions = Either String (IO (Either NoMessageReason M.Message), [ReceiveId] -> IO ())
 
-createDestination :: DestinationOpts -> IO PublisherFunction
-createDestination (DestFile (MkPath path)) = createFileDestination (unpack path)
-createDestination (AmqpDestination (MkUri uri) exchange routingKey) =
-    createRabbitMqDestination (AMQP.fromURI $ unpack uri) exchange routingKey
+createDestination :: Maybe Path -> Maybe Uri -> Maybe Exchange -> Maybe RoutingKey -> IO PublisherFunction
+createDestination (Just (Path path)) _                _                          _         = createFileDestination $ unpack path
+createDestination _                  (Just (Uri uri)) (Just (Exchange ex)) maybeRoutingKey =
+  createRabbitMqDestination
+    (AMQP.fromURI $ unpack uri)
+    ex
+    ((\(RoutingKey rk) -> rk) <$> maybeRoutingKey)
+createDestination _ _ _ _ = pure $ Left "Please provide both RabbitMQ URI and exchange name for destination."
 
-createSource :: SourceOpts -> IO SourceFunctions
-createSource (SrcFile (MkPath path)) = createFileSource (unpack path)
-createSource (AmqpSource (MkUri uri) queue) = createRabbitMqSource (AMQP.fromURI $ unpack uri) queue
+createSource :: Maybe Path -> Maybe Uri -> Maybe Queue -> IO SourceFunctions
+createSource (Just (Path path)) _                _                = createFileSource $ unpack path
+createSource _                  (Just (Uri uri)) (Just (Queue q)) = createRabbitMqSource (AMQP.fromURI (unpack uri)) q
+createSource _ _ _ = pure $ Left "Please provide both RabbitMQ URI and queue name for source."
 
+bootstrap :: Args Unwrapped -> IO ()
+bootstrap (Args srcFile srcUri srcQueue dstFile destUri dstExchange routingKey) = do
+  maybePublisher <- createDestination dstFile destUri dstExchange routingKey
+  maybeSource <- createSource srcFile srcUri srcQueue
+  either printError runMover (createEnv <$> maybePublisher <*> maybeSource)
 
 main :: IO ()
 main = do
-  opts <- execParser (info optionParser (fullDesc <> progDesc "rabbitmq swiss army knife"))
-  maybePublisher <- createDestination (destination opts)
-  maybeSource <- createSource (source opts)
-  either printError runMover (createEnv <$> maybePublisher <*> maybeSource)
+  (args, printHelp) <- unwrapWithHelp "Rabbitmq Swiss Army Knife" :: IO (Args Unwrapped, IO ())
+  if (areArgsValid args)
+    then bootstrap args
+    else
+      let msg = "Necessary args might be missing or were invalid (only 1 type of source and 1 type of destination is allowed)."
+      in
+        putStrLn msg >> printHelp
