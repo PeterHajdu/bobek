@@ -24,9 +24,10 @@ import Data.Bifunctor(bimap)
 rabbitPublish :: AMQP.Channel -> T.Text -> Maybe T.Text -> [M.Message] -> IO PublishResult
 rabbitPublish channel exchange maybeRoutingKey messages = do
   publishResult <- traverse (\msg -> publishToRabbitMq msg) messages
-  confirmed <- acked <$> AMQP.waitForConfirms channel --todo: handle exceptions
-  let (ok, nok) = partition (\(pid, _) -> member pid confirmed) (rights publishResult)
-  return $ MkPublishResult (lefts publishResult ++ (snd <$> nok)) (snd <$> ok)
+  confirmResult <- try $ AMQP.waitForConfirms channel :: IO (Either AMQP.AMQPException AMQP.ConfirmationResult)
+  return $ either (const confirmFailed) (pubFromConfirmResult publishResult) confirmResult
+
+
   where publishToRabbitMq :: M.Message -> IO (Either ReceiveId (Int, ReceiveId))
         publishToRabbitMq msg = do
           let (rabbitMessage, routingKeyInMessage) = extractMessageRoutingKey msg
@@ -34,7 +35,10 @@ rabbitPublish channel exchange maybeRoutingKey messages = do
           result <- try $ AMQP.publishMsg channel exchange routingKey rabbitMessage :: IO (Either AMQP.AMQPException (Maybe Int))
           let rid = M.receiveId msg
           return $ bimap (const rid) (\seqNum -> (fromMaybe (error "Sequence number should be present always.") seqNum, rid)) result
-
+        confirmFailed = MkPublishResult (M.receiveId <$> messages) []
+        pubFromConfirmResult publishResult confirmResult = let confirmed = acked confirmResult
+                                                               (ok, nok) = partition (\(pid, _) -> member pid confirmed) (rights publishResult)
+                                                            in MkPublishResult (lefts publishResult ++ (snd <$> nok)) (snd <$> ok)
         acked :: AMQP.ConfirmationResult -> IntSet
         acked res = case res of
                       AMQP.Complete (ok, _) -> ok
