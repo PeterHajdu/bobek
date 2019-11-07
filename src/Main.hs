@@ -16,6 +16,7 @@ import qualified Network.AMQP as AMQP(fromURI)
 
 import Options.Applicative
 import Data.Semigroup ((<>))
+import Data.Function ((&))
 
 printError :: String -> IO ()
 printError errorMsg = putStrLn $ "Unable to initialize rabbitmq environment: " ++ errorMsg
@@ -27,19 +28,22 @@ type PublisherFunction = Either String ([M.Message] -> IO PublishResult)
 type SourceFunctions = Either String (IO (Either NoMessageReason M.Message), [ReceiveId] -> IO ())
 
 createDestination :: DestinationOpts -> IO PublisherFunction
-createDestination (DestFile (MkPath path)) = createFileDestination (unpack path)
-createDestination (AmqpDestination (MkUri uri) exchange routingKey) =
-    createRabbitMqDestination (AMQP.fromURI $ unpack uri) exchange routingKey
+createDestination (Outfile filePath) = createFileDestination filePath
+createDestination (Exchange uri ex maybeRk) =
+    createRabbitMqDestination (AMQP.fromURI uri) (pack ex) (pack <$> maybeRk)
 
 createSource :: SourceOpts -> IO SourceFunctions
-createSource (SrcFile (MkPath path)) = createFileSource (unpack path)
-createSource (AmqpSource (MkUri uri) queue) = createRabbitMqSource (AMQP.fromURI $ unpack uri) queue
+createSource (Infile filePath) = createFileSource filePath
+createSource (Queue uri queueName) = createRabbitMqSource (AMQP.fromURI uri) (pack queueName)
 
 
 main :: IO ()
 main = do
-  opts <- execParser (info optionParser (fullDesc <> progDesc "rabbitmq swiss army knife"))
-  maybePublisher <- createDestination (destination opts)
-  maybeSource <- createSource (source opts)
-  let fltr = maybe defaultFilter scriptFilter (OptParse.filter opts)
-  either printError runMover ((createEnv fltr) <$> maybePublisher <*> maybeSource)
+  opts <- execParser $ info optionParser
+    $ header "RabbitMq Swiss Army Knife" <>
+      footer "This utility moves messages from a source to a destination."
+  maybePublisher <- createDestination $ dst opts
+  maybeSource <- createSource $ src opts
+  let filterPath = opts & mf & fmap OptParse.filter
+  let filter' = maybe defaultFilter scriptFilter filterPath
+  either printError runMover ((createEnv filter') <$> maybePublisher <*> maybeSource)

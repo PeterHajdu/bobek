@@ -1,97 +1,49 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE DataKinds          #-}
+{-# LANGUAGE DeriveGeneric      #-}
+{-# LANGUAGE FlexibleInstances  #-}
+{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE TypeOperators      #-}
+
 module OptParse(
     optionParser,
-    Opts(..),
     DestinationOpts(..),
     SourceOpts(..),
-    Path(..),
-    URI(..)
+    Filter(..),
+    Opts(..)
 ) where
 
+import Options.Generic
 import Options.Applicative
-import Data.Text
-import Data.String(IsString)
+import Data.Char
 
-newtype URI = MkUri Text deriving(Data.String.IsString, Show)
-newtype Path = MkPath Text deriving(Data.String.IsString, Show)
+mods :: Modifiers
+mods = defaultModifiers { fieldNameModifier = map toLower
+                        , shortNameModifier = firstLetter
+                        }
 
-data Opts = MkOpts
-    { source :: SourceOpts
-    , destination :: DestinationOpts
-    , filter :: Maybe FilePath
-    } deriving(Show)
+data SourceOpts = Infile String
+                | Queue { srcUri :: String
+                        , queue  :: String
+                        } deriving (Show, Generic)
+instance ParseRecord SourceOpts  where parseRecord = parseRecordWithModifiers mods
 
-data SourceOpts
-    = AmqpSource URI Text
-    | SrcFile Path
-    deriving(Show)
+data DestinationOpts = Outfile String
+                     | Exchange { dstUri :: String
+                                , exchange :: String
+                                , routingKey :: Maybe String
+                                } deriving (Show, Generic)
+instance ParseRecord DestinationOpts where parseRecord = parseRecordWithModifiers mods
 
-data DestinationOpts
-    = AmqpDestination URI Text (Maybe Text) -- connection-uri, exchange, maybe routingkey
-    | DestFile Path
-    deriving(Show)
+data Filter = Filter { filter :: String } deriving (Show, Generic)
+instance ParseRecord Filter where parseRecord = parseRecordWithModifiers mods
 
-optionParser :: Parser Opts
-optionParser = MkOpts
-    <$> (srcAmqpOpt <|> srcFileOpt)
-    <*> (destAmqpOpt <|> destFileOpt)
-    <*> filterOpt
+data Opts = Opts { src :: SourceOpts
+                 , dst :: DestinationOpts
+                 , mf  :: Maybe Filter
+                 }
 
-filterOpt :: Parser (Maybe FilePath)
-filterOpt = (optional $ strOption
-        (   long "filter"
-        <>  short 'f'
-        <>  metavar "SCRIPT"
-        <>  help "Filter script path.")
-        )
-
-srcAmqpOpt :: Parser SourceOpts
-srcAmqpOpt = AmqpSource
-    <$> strOption
-        (   long "source-amqp"
-        <>  short 's'
-        <>  metavar "SRC_AMQP"
-        <>  help "Source AMQP URI. Example: TODO"
-        )
-    <*> strOption
-        (   long "source-queue"
-        <> short 'q'
-        <>  metavar "SRC_QUEUE"
-        <>  help "Source queue."
-        )
-
-srcFileOpt :: Parser SourceOpts
-srcFileOpt = SrcFile
-    <$> strOption
-        (   long "input-file"
-        <> short 'i'
-        <> metavar "FILE"
-        <>  help "Source/input file path" )
-
-destAmqpOpt :: Parser DestinationOpts
-destAmqpOpt = AmqpDestination
-    <$> strOption
-        (  long "destination-amqp"
-        <> short 'd'
-        <> metavar "DEST_AMQP"
-        <> help "Destination AMQP URI. Example: TODO"
-        )
-    <*> strOption
-        ( long "exchange"
-        <> short 'e'
-        <> metavar "DEST_EXCHANGE"
-        <> help "Destination exchange" )
-    <*> ( optional $ strOption
-            ( long "routing-key"
-            <> short 'r'
-            <> metavar "DEST_ROUTING_KEY"
-            <> help "Override routing key for publishing" )
-        )
-
-destFileOpt :: Parser DestinationOpts
-destFileOpt = DestFile
-    <$> strOption
-        ( long "destination-file"
-        <> short 'o'
-        <> metavar "DESTFILE"
-        <> help "Destination/output file path" )
+optionParser :: Parser Opts -- TODO: help is printed 3 times..
+optionParser = Opts
+  <$> parseRecord
+  <*> parseRecord
+  <*> (optional $ parseRecord)
