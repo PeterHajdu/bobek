@@ -17,11 +17,13 @@ test-suite test
   build-depends:       base >=4.10
                      , hspec
                      , mtl
+                     , process
                      , safe
                      , bytestring
                      , text
   other-modules:       FakeEnvironment
                      , Source
+                     , ScriptFilter
                      , Destination
                      , Filter
                      , Message
@@ -29,7 +31,7 @@ test-suite test
                      , ReceiveId
   hs-source-dirs:      src, test
   default-language:    Haskell2010
-  extensions:          OverloadedStrings
+  default-extensions:          OverloadedStrings
   ghc-options:         -Weverything
                        -Wno-missing-exported-signatures
                        -Wno-implicit-prelude
@@ -57,6 +59,7 @@ executable bobek
   build-depends:       base >=4.10
                      , amqp
                      , bytestring
+                     , process
                      , mtl
                      , transformers
                      , text
@@ -65,7 +68,7 @@ executable bobek
                      , optparse-applicative
   hs-source-dirs:      src
   default-language:    Haskell2010
-  extensions:          OverloadedStrings
+  default-extensions:          OverloadedStrings
   ghc-options:         -Weverything
                        -Wno-missing-exported-signatures
                        -Wno-implicit-prelude

@@ -4,11 +4,11 @@ import ReceiveId(ReceiveId(..))
 import Test.Hspec
 import FakeEnvironment
 import Message
-import Source
+import Source()
 import Destination
 import Filter
+import ScriptFilter
 import Data.Bifoldable (biList)
-import Data.List (partition)
 
 makeId :: Integral a => a -> ReceiveId
 makeId n = MkReceiveId $ fromIntegral n
@@ -63,3 +63,15 @@ main = hspec $ do
       let onlyCopy = const Copy
       let result = runMoveMessages (MkEnv (Right <$> onePageMessages) [] [] allSucceeds onlyCopy)
       (acknowledgedMessages result) `shouldBe` []
+
+  describe "script filters" $ do
+    it "should parse ack from response line" $ do
+      parseAction "ack" `shouldBe` Ack
+      parseAction " ack " `shouldBe` Ack
+
+    it "should parse copy from response line" $ do
+      parseAction "copy" `shouldBe` Copy
+      parseAction " copy " `shouldBe` Copy
+
+    it "should combine copy and ack" $ do
+      parseAction "ackcopy" `shouldBe` CopyAndAck
