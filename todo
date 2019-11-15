@@ -2,3 +2,4 @@
  - add logging
  - should stop if publish fails for at least one message
  - add stdin and stdout support
+ - extract bulk size to config

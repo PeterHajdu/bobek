@@ -19,8 +19,8 @@ data Environment = MkEnv {
     toReceive :: [Either NoMessageReason Message]
   , acknowledgedMessages :: [[ReceiveId]]
   , published :: [[Message]]
-  , publishResults :: [PublishResult]
-  , filterResults :: [FilterAction]
+  , publishFun :: [Message] -> PublishResult
+  , filterFun :: Message -> FilterAction
 }
 
 newtype FakeEnvironment a = MkFakeEnvironment {run :: State Environment a} deriving (Functor, Applicative, Monad, MonadState Environment)
@@ -39,14 +39,12 @@ instance Source FakeEnvironment where
 
 instance Destination FakeEnvironment where
   publish publishedMessages = do
-    env@(MkEnv _ _ pubed pubRes _) <- get
-    put $ env {published = pubed++[publishedMessages], publishResults = tailSafe pubRes}
-    return $ head pubRes
+    env@(MkEnv _ _ pubed pubFun _) <- get
+    put $ env {published = pubed++[publishedMessages]}
+    return $ pubFun publishedMessages
 
 instance Filter FakeEnvironment where
-  filterAction _ = do
-    oldEnv@(MkEnv _ _ _ _ actions) <- get
-    let newEnv = oldEnv {filterResults = tailSafe actions}
-    put newEnv
-    return (head actions)
+  filterAction message = do
+    oldEnv@(MkEnv _ _ _ _ filterFun) <- get
+    return (filterFun message)
 

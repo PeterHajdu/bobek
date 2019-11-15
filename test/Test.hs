@@ -7,46 +7,59 @@ import Message
 import Source
 import Destination
 import Filter
+import Data.Bifoldable (biList)
+import Data.List (partition)
 
-testMessages :: [Message]
-testMessages = (\rid -> (MkMessage (MkReceiveId rid) "routing key" "test message")) <$> [1..100]
+makeId :: Integral a => a -> ReceiveId
+makeId n = MkReceiveId $ fromIntegral n
 
+makeMessages :: Int -> [Message]
+makeMessages n = (\rid -> (MkMessage (makeId rid) "routing key" "test message")) <$> [1..n]
 
-testIds :: [ReceiveId]
-testIds = receiveId <$> testMessages
+bothFilter :: Message -> FilterAction
+bothFilter = const CopyAndAck
 
-testMessagesToReceive :: [Either NoMessageReason Message]
-testMessagesToReceive = Right <$> testMessages
+twoBulkMessages :: [Message]
+twoBulkMessages = makeMessages 1500
 
-publishSuccesses :: [PublishResult]
-publishSuccesses = (MkPublishResult []) <$> ((:[]) <$> testIds)
+twoBulks :: [[Message]]
+twoBulks = (biList $ splitAt 1000 twoBulkMessages)
 
-someSucceeds :: [ReceiveId] -> [PublishResult]
-someSucceeds succeededIds = (\rid -> if elem rid succeededIds
-                                     then MkPublishResult [] [rid]
-                                     else MkPublishResult [rid] []) <$> testIds
+twoBulksOfIds :: [[ReceiveId]]
+twoBulksOfIds = (fmap receiveId) <$> twoBulks
 
-bothFilter :: [FilterAction]
-bothFilter = repeat CopyAndAck
+allSucceeds :: [Message] -> PublishResult
+allSucceeds msgs = MkPublishResult [] (receiveId <$> msgs)
+
+someSucceeds :: [Message] -> PublishResult
+someSucceeds msgs = let middle = (length msgs `div` 2)
+                        (f, s) = splitAt middle (receiveId <$> msgs)
+                     in MkPublishResult s f
+
+onePageMessages :: [Message]
+onePageMessages = makeMessages 1000
 
 main :: IO ()
 main = hspec $ do
   describe "moveMessages" $ do
-    it "should send message received from the source" $ do
-      let result = runMoveMessages (MkEnv testMessagesToReceive [] [] publishSuccesses bothFilter)
-      (published result) `shouldBe` pure <$> testMessages
+    it "should publish messages in one bulk if the number of messages is less than the bulk size" $ do
+      let result = runMoveMessages (MkEnv (Right <$> onePageMessages) [] [] allSucceeds bothFilter)
+      (published result) `shouldBe` [onePageMessages]
+
+    it "should publish messages in more bulks if the number of messages is greater than the bulk size" $ do
+      let result = runMoveMessages (MkEnv (Right <$> twoBulkMessages) [] [] allSucceeds bothFilter)
+      (published result) `shouldBe` twoBulks
 
     it "should acknowledge published messages" $ do
-      let result = runMoveMessages (MkEnv testMessagesToReceive [] [] publishSuccesses bothFilter)
-      (acknowledgedMessages result) `shouldBe` pure <$> testIds
+      let result = runMoveMessages (MkEnv (Right <$> twoBulkMessages) [] [] allSucceeds bothFilter)
+      (acknowledgedMessages result) `shouldBe` twoBulksOfIds
 
     it "should acknowledge messages only if publishing succeeds" $ do
-      let succeededIds = [MkReceiveId 10, MkReceiveId 20]
-      let result = runMoveMessages (MkEnv testMessagesToReceive [] [] (someSucceeds succeededIds) bothFilter)
-      (acknowledgedMessages result) `shouldBe` pure <$> succeededIds
+      let toBeAcked = succeeded $ someSucceeds onePageMessages
+      let result = runMoveMessages (MkEnv (Right <$> onePageMessages) [] [] someSucceeds bothFilter)
+      (acknowledgedMessages result) `shouldBe` [toBeAcked]
 
     it "should acknowledge messages only if the filter asks for it" $ do
-      let onlyCopy = repeat Copy
-      let result = runMoveMessages (MkEnv testMessagesToReceive [] [] publishSuccesses onlyCopy)
+      let onlyCopy = const Copy
+      let result = runMoveMessages (MkEnv (Right <$> onePageMessages) [] [] allSucceeds onlyCopy)
       (acknowledgedMessages result) `shouldBe` []
-

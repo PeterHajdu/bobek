@@ -21,6 +21,8 @@ import Control.Exception(try)
 import Control.Arrow(left)
 import Data.Bifunctor(bimap)
 
+--todo: extract try calls
+
 rabbitPublish :: AMQP.Channel -> T.Text -> Maybe T.Text -> [M.Message] -> IO PublishResult
 rabbitPublish channel exchange maybeRoutingKey messages = do
   publishResult <- traverse (\msg -> publishToRabbitMq msg) messages

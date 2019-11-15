@@ -7,23 +7,31 @@ import Source
 import Message()
 import Filter
 
-import Control.Monad (unless, void)
+import Data.Either (lefts, rights)
+import Control.Monad (unless, replicateM)
+
+--todo: extract to config
+bulkSize :: Int
+bulkSize = 1000
 
 getMessages :: Source m => m (Either NoMessageReason [Message])
 getMessages = do
-  msg <- receive --todo: should use bulked publish
-  return $ pure <$> msg
+  maybeMessages <- replicateM bulkSize receive
+  let messages = rights maybeMessages
+  let errors = lefts maybeMessages
+  return $ if null messages
+           then Left $ head errors
+           else Right $ messages
 
 publishAndAckMessages :: forall m.(Source m, Destination m, Filter m) => [Message] -> m ()
-publishAndAckMessages msgs = void $ traverse publishSingleMessage msgs --todo: should use bulked publish
-  where publishSingleMessage :: Message -> m ()
-        publishSingleMessage msg = do
-          publishResult <- publish [msg]
-          needsAck <- shouldAck <$> (filterAction msg)
-          if needsAck then do
-            let ackable = succeeded publishResult
-            unless (null ackable) $ acknowledge ackable
-          else return ()
+publishAndAckMessages msgs = do
+  publishResult <- publish msgs
+  filterActions <- traverse filterAction msgs
+  let actionWithId = zip filterActions (receiveId <$> msgs)
+  let needsAck = filter (shouldAck . fst) actionWithId
+  let toBeAcked = filter (\i -> elem i $ succeeded publishResult) (snd <$> needsAck)
+  _ <- unless (null toBeAcked) $ acknowledge toBeAcked
+  return ()
 
 moveMessages :: (Source m, Destination m, Filter m) => m ()
 moveMessages = do
