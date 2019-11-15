@@ -10,7 +10,6 @@ import Filter
 import Data.Either (lefts, rights)
 import Control.Monad (unless, replicateM)
 
---todo: extract to config
 bulkSize :: Int
 bulkSize = 1000
 

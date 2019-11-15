@@ -1,4 +1,4 @@
-module FileEnv(createFileSource, createFileDestination) where
+module FileEnv(createStdoutDestination, createStdinSource, createFileSource, createFileDestination) where
 
 import Message
 import Source
@@ -9,7 +9,7 @@ import qualified Data.ByteString.Char8 as BSC(append, cons, hGetLine, hPutStrLn,
 
 import Data.Text.Encoding(encodeUtf8, decodeUtf8)
 
-import System.IO(Handle, IOMode(ReadMode, AppendMode), openFile, hFlush)
+import System.IO(Handle, IOMode(ReadMode, AppendMode), openFile, hFlush, stdout, stdin)
 import System.IO.Error(isEOFError )
 
 import Control.Exception(IOException, try)
@@ -34,6 +34,10 @@ recv handle = do
   return $ maybeBody >>= parseRoutingKeyAndMessage
   where mapError e = if isEOFError e then NMREmptyQueue else NMRError $ show e
 
+createStdinSource :: (IO (Either NoMessageReason Message), [ReceiveId] -> IO ())
+createStdinSource = (recv stdin, const $ return ())
+
+--todo: extract source functions to a named data structure
 createFileSource :: FilePath -> IO (Either String (IO (Either NoMessageReason Message), [ReceiveId] -> IO ()))
 createFileSource filePath = do
   maybeHandle <- try $ openFile filePath ReadMode :: IO (Either IOException Handle)
@@ -57,3 +61,6 @@ createFileDestination :: FilePath -> IO (Either String ([Message] -> IO PublishR
 createFileDestination filePath = do
   maybeHandle <- try $ openFile filePath AppendMode :: IO (Either IOException Handle)
   return $ bimap show writeToFile maybeHandle
+
+createStdoutDestination :: [Message] -> IO PublishResult
+createStdoutDestination = writeToFile stdout

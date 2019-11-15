@@ -25,17 +25,19 @@ createEnv :: (M.Message -> IO FilterAction) -> ([M.Message] -> IO PublishResult)
 createEnv fltr pub (rec, ack) = MkEnv pub rec ack fltr
 
 type PublisherFunction = Either String ([M.Message] -> IO PublishResult)
-type SourceFunctions = Either String (IO (Either NoMessageReason M.Message), [ReceiveId] -> IO ())
 
 createDestination :: DestinationOpts -> IO PublisherFunction
+createDestination Stdout = return $ Right $ createStdoutDestination
 createDestination (Outfile filePath) = createFileDestination filePath
 createDestination (Exchange uri ex maybeRk) =
     createRabbitMqDestination (AMQP.fromURI uri) (pack ex) (pack <$> maybeRk)
 
+type SourceFunctions = Either String (IO (Either NoMessageReason M.Message), [ReceiveId] -> IO ())
+
 createSource :: SourceOpts -> IO SourceFunctions
+createSource Stdin = return $ Right $ createStdinSource
 createSource (Infile filePath) = createFileSource filePath
 createSource (Queue uri queueName) = createRabbitMqSource (AMQP.fromURI uri) (pack queueName)
-
 
 main :: IO ()
 main = do

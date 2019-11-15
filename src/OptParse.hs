@@ -21,13 +21,15 @@ mods = defaultModifiers { fieldNameModifier = map toLower
                         , shortNameModifier = firstLetter
                         }
 
-data SourceOpts = Infile String
+data SourceOpts = Stdin
+                | Infile String
                 | Queue { srcUri :: String
                         , queue  :: String
                         } deriving (Show, Generic)
 instance ParseRecord SourceOpts  where parseRecord = parseRecordWithModifiers mods
 
-data DestinationOpts = Outfile String
+data DestinationOpts = Stdout
+                     | Outfile String
                      | Exchange { dstUri :: String
                                 , exchange :: String
                                 , routingKey :: Maybe String

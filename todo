@@ -1,5 +1,7 @@
- - should stop if publish fails for at least one message
  - add logging
- - add stdin and stdout support
  - add scriptfilter
  - extract bulk size to config
+
+to be decided:
+ - should stop if publish fails for at least one message
+ - binary message support
