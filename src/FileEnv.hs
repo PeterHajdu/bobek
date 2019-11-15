@@ -22,6 +22,9 @@ import Data.Text()
 routingKeySeparator :: Char
 routingKeySeparator = ' '
 
+catchIO :: IO a -> IO (Either IOException a)
+catchIO = try
+
 parseRoutingKeyAndMessage :: BSC.ByteString -> Either NoMessageReason Message
 parseRoutingKeyAndMessage line =
   case BSC.span (/= routingKeySeparator) line of
@@ -30,7 +33,8 @@ parseRoutingKeyAndMessage line =
 
 recv :: Handle -> IO (Either NoMessageReason Message)
 recv handle = do
-  maybeBody <- (left mapError) <$> (try $ BSC.hGetLine handle) :: IO (Either NoMessageReason BSC.ByteString)
+  maybeLine <- catchIO $ BSC.hGetLine handle
+  let maybeBody = left mapError maybeLine
   return $ maybeBody >>= parseRoutingKeyAndMessage
   where mapError e = if isEOFError e then NMREmptyQueue else NMRError $ show e
 
@@ -40,7 +44,7 @@ createStdinSource = (recv stdin, const $ return ())
 --todo: extract source functions to a named data structure
 createFileSource :: FilePath -> IO (Either String (IO (Either NoMessageReason Message), [ReceiveId] -> IO ()))
 createFileSource filePath = do
-  maybeHandle <- try $ openFile filePath ReadMode :: IO (Either IOException Handle)
+  maybeHandle <- catchIO $ openFile filePath ReadMode
   return $ bimap show (\handle -> (recv handle, const $ return ())) maybeHandle
 
 serializeMessage :: Message -> BSC.ByteString
@@ -53,13 +57,13 @@ writeToFile handle messages = do
   return $ MkPublishResult (lefts results) (rights results)
   where writeMessage :: Message -> IO (Either ReceiveId ReceiveId)
         writeMessage msg = do
-          result <- try $ BSC.hPutStrLn handle (serializeMessage msg) :: IO (Either IOException ())
+          result <- catchIO $ BSC.hPutStrLn handle (serializeMessage msg)
           let rid = receiveId msg
           return $ bimap (const rid) (const rid) result
 
 createFileDestination :: FilePath -> IO (Either String ([Message] -> IO PublishResult))
 createFileDestination filePath = do
-  maybeHandle <- try $ openFile filePath AppendMode :: IO (Either IOException Handle)
+  maybeHandle <- catchIO $ openFile filePath AppendMode
   return $ bimap show writeToFile maybeHandle
 
 createStdoutDestination :: [Message] -> IO PublishResult
