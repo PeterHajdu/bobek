@@ -4,8 +4,10 @@ import ReceiveId(ReceiveId(..))
 import Test.Hspec
 import FakeEnvironment
 import Message
+import Source()
 import Destination
 import Filter
+import ScriptFilter
 import Data.Bifoldable (biList)
 
 makeId :: Integral a => a -> ReceiveId
@@ -15,7 +17,7 @@ makeMessages :: Int -> [Message]
 makeMessages n = (\rid -> (MkMessage (makeId rid) "routing key" "test message")) <$> [1..n]
 
 bothFilter :: Message -> FilterActions
-bothFilter = const [Copy, Ack]
+bothFilter = const $ MkFilterActions [Copy, Ack]
 
 twoBulkMessages :: [Message]
 twoBulkMessages = makeMessages 1500
@@ -58,12 +60,30 @@ main = hspec $ do
       (acknowledgedMessages result) `shouldBe` [toBeAcked]
 
     it "should acknowledge messages only if the filter asks for it" $ do
-      let onlyCopy = const [Copy]
+      let onlyCopy = const $ MkFilterActions [Copy]
       let result = runMoveMessages (MkEnv (Right <$> onePageMessages) [] [] allSucceeds onlyCopy)
       (acknowledgedMessages result) `shouldBe` []
 
     it "should copy the messages only if the filter asks for it" $ do
-      let onlyAck = const [Ack]
+      let onlyAck = const $ MkFilterActions [Ack]
       let result = runMoveMessages (MkEnv (Right <$> twoBulkMessages) [] [] allSucceeds onlyAck)
       (acknowledgedMessages result) `shouldBe` twoBulksOfIds
       (null $ published result) `shouldBe` True
+
+  describe "script filters" $ do
+    it "should parse ack from response line" $ do
+      (shouldAck $ parseAction "ack") `shouldBe` True
+      (shouldAck $ parseAction " ack ") `shouldBe` True
+      (shouldCopy $ parseAction "ack") `shouldBe` False
+      (shouldCopy $ parseAction " ack ") `shouldBe` False
+
+    it "should parse copy from response line" $ do
+      (shouldCopy $ parseAction "copy") `shouldBe` True
+      (shouldCopy $ parseAction " copy ") `shouldBe` True
+      (shouldAck $ parseAction "copy") `shouldBe` False
+      (shouldAck $ parseAction " copy ") `shouldBe` False
+
+    it "should combine copy and ack" $ do
+      let ackcopy = "ackcopy"
+      (shouldAck $ parseAction ackcopy) `shouldBe` True
+      (shouldCopy $ parseAction ackcopy) `shouldBe` True

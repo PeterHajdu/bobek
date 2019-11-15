@@ -34,9 +34,9 @@ runFilter msgs = do
 splitUpMessagesByAction :: [(FilterActions, Message)] -> (Set.Set ReceiveId, [Message], Set.Set ReceiveId)
 splitUpMessagesByAction = foldl' splitter (Set.empty, [], Set.empty)
   where splitter (oldAck, oldPub, oldNoPub) (actions, msg) =
-          let newAck = if (Ack `elem` actions) then Set.insert (receiveId msg) oldAck else oldAck
-              newPub = if (Copy `elem` actions) then msg:oldPub else oldPub
-              newNoPub = if (Copy `elem` actions) then oldNoPub else Set.insert (receiveId msg) oldNoPub
+          let newAck = if (shouldAck actions) then Set.insert (receiveId msg) oldAck else oldAck
+              newPub = if (shouldCopy actions) then msg:oldPub else oldPub
+              newNoPub = if (shouldCopy actions) then oldNoPub else Set.insert (receiveId msg) oldNoPub
            in (newAck, newPub, newNoPub)
 
 publishMessages :: Destination m => [Message] -> m (Set.Set ReceiveId)

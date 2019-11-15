@@ -16,7 +16,7 @@ data SourceFunctions = MkSourceFunctions (IO (Either NoMessageReason Message)) (
 data Env = MkEnv
   { envPublish :: [Message] -> IO PublishResult
   , sourceFunctions :: SourceFunctions
-  , envFilterAction :: Message -> IO FilterAction
+  , envFilterAction :: Message -> IO FilterActions
   }
 
 newtype App a = MkApp {run :: ReaderT Env IO a} deriving (Functor, Applicative, Monad, MonadReader Env, MonadIO)
