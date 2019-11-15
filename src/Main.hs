@@ -3,7 +3,7 @@ module Main(main) where
 import Env
 import RabbitMqEnv
 import FileEnv
-import Filter(FilterAction)
+import Filter(FilterAction(..))
 import qualified Message as M
 import Destination
 import OptParse
@@ -14,7 +14,7 @@ import qualified Network.AMQP as AMQP(fromURI)
 
 import Options.Applicative
 import Data.Semigroup ((<>))
-import Data.Function ((&))
+import Data.Maybe (fromMaybe)
 
 printError :: String -> IO ()
 printError errorMsg = putStrLn $ "Unable to initialize rabbitmq environment: " ++ errorMsg
@@ -35,6 +35,10 @@ createSource Stdin = return $ Right $ createStdinSource
 createSource (Infile filePath) = createFileSource filePath
 createSource (Queue uri queueName) = createRabbitMqSource (AMQP.fromURI uri) (pack queueName)
 
+createFilter :: FilterOpt -> (M.Message -> IO FilterAction)
+createFilter DontAck = const $ return Copy
+createFilter (ScriptFilter scriptPath) = scriptFilter scriptPath
+
 main :: IO ()
 main = do
   opts <- execParser $ info optionParser
@@ -42,6 +46,5 @@ main = do
       footer "This utility moves messages from a source to a destination."
   maybePublisher <- createDestination $ dst opts
   maybeSource <- createSource $ src opts
-  let filterPath = opts & mf & fmap OptParse.filter
-  let filter' = maybe defaultFilter scriptFilter filterPath
-  either printError runMover ((createEnv filter') <$> maybePublisher <*> maybeSource)
+  let mfilter = fromMaybe defaultFilter (createFilter <$> (messageFilter opts))
+  either printError runMover ((createEnv mfilter) <$> maybePublisher <*> maybeSource)

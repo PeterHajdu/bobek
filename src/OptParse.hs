@@ -8,7 +8,7 @@ module OptParse(
     optionParser,
     DestinationOpts(..),
     SourceOpts(..),
-    Filter(..),
+    FilterOpt(..),
     Opts(..)
 ) where
 
@@ -36,12 +36,13 @@ data DestinationOpts = Stdout
                                 } deriving (Show, Generic)
 instance ParseRecord DestinationOpts where parseRecord = parseRecordWithModifiers mods
 
-data Filter = Filter { filter :: String } deriving (Show, Generic)
-instance ParseRecord Filter where parseRecord = parseRecordWithModifiers mods
+data FilterOpt = DontAck | ScriptFilter String deriving (Show, Generic)
+
+instance ParseRecord FilterOpt where parseRecord = parseRecordWithModifiers mods
 
 data Opts = Opts { src :: SourceOpts
                  , dst :: DestinationOpts
-                 , mf  :: Maybe Filter
+                 , messageFilter :: Maybe FilterOpt
                  }
 
 optionParser :: Parser Opts -- TODO: help is printed 3 times..
