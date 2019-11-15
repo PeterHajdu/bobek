@@ -1,5 +1,5 @@
- - add bulk publish support
- - add logging
  - should stop if publish fails for at least one message
+ - add logging
  - add stdin and stdout support
+ - add scriptfilter
  - extract bulk size to config

@@ -11,7 +11,7 @@ import Data.Maybe (fromMaybe)
 import Data.Either(lefts, rights)
 import qualified Data.Text as T
 import Data.ByteString.Lazy (toStrict, fromStrict)
-import qualified Network.AMQP as AMQP(AMQPException, Connection, ConnectionOpts, publishMsg, DeliveryMode(..), newMsg, openChannel, openConnection'', Channel, getMsg, Message(..), Ack(..), ackMsg, Envelope(..), confirmSelect, waitForConfirms, ConfirmationResult(..))
+import qualified Network.AMQP as AMQP(AMQPException, ConnectionOpts, publishMsg, DeliveryMode(..), newMsg, openChannel, openConnection'', Channel, getMsg, Message(..), Ack(..), ackMsg, Envelope(..), confirmSelect, waitForConfirms, ConfirmationResult(..))
 import Control.Monad(void, join)
 import Control.Monad.IO.Class(liftIO)
 
@@ -21,12 +21,13 @@ import Control.Exception(try)
 import Control.Arrow(left)
 import Data.Bifunctor(bimap)
 
---todo: extract try calls
+catchAmqp :: IO a -> IO (Either AMQP.AMQPException a)
+catchAmqp = try
 
 rabbitPublish :: AMQP.Channel -> T.Text -> Maybe T.Text -> [M.Message] -> IO PublishResult
 rabbitPublish channel exchange maybeRoutingKey messages = do
   publishResult <- traverse (\msg -> publishToRabbitMq msg) messages
-  confirmResult <- try $ AMQP.waitForConfirms channel :: IO (Either AMQP.AMQPException AMQP.ConfirmationResult)
+  confirmResult <- catchAmqp $ AMQP.waitForConfirms channel
   return $ either (const confirmFailed) (pubFromConfirmResult publishResult) confirmResult
 
 
@@ -34,7 +35,7 @@ rabbitPublish channel exchange maybeRoutingKey messages = do
         publishToRabbitMq msg = do
           let (rabbitMessage, routingKeyInMessage) = extractMessageRoutingKey msg
           let routingKey = fromMaybe routingKeyInMessage maybeRoutingKey
-          result <- try $ AMQP.publishMsg channel exchange routingKey rabbitMessage :: IO (Either AMQP.AMQPException (Maybe Int))
+          result <- catchAmqp $ AMQP.publishMsg channel exchange routingKey rabbitMessage
           let rid = M.receiveId msg
           return $ bimap (const rid) (\seqNum -> (fromMaybe (error "Sequence number should be present always.") seqNum, rid)) result
         confirmFailed = MkPublishResult (M.receiveId <$> messages) []
@@ -58,20 +59,20 @@ extractMessageRoutingKey (M.MkMessage _ routingKey body) =
 
 rabbitReceive :: AMQP.Channel -> T.Text -> IO (Either NoMessageReason M.Message)
 rabbitReceive channel queue = do
-  maybeMessage <- (try $ AMQP.getMsg channel AMQP.Ack queue :: IO (Either AMQP.AMQPException (Maybe (AMQP.Message, AMQP.Envelope))))
+  maybeMessage <- catchAmqp $ AMQP.getMsg channel AMQP.Ack queue
   let msgWithFlattenedError = join $ bimap (NMRError . show) (maybe (Left NMREmptyQueue) Right) maybeMessage
   return $ messageFromRabbitMessage <$> msgWithFlattenedError
 
 rabbitAcknowledge :: AMQP.Channel -> [ReceiveId] -> IO ()
 rabbitAcknowledge channel ids = void $ traverse ackMessage ids
   where ackMessage :: ReceiveId -> IO (Either AMQP.AMQPException ())
-        ackMessage (MkReceiveId i) = try $ AMQP.ackMsg channel i False :: IO (Either AMQP.AMQPException ())
+        ackMessage (MkReceiveId i) = catchAmqp $ AMQP.ackMsg channel i False
 
 createChannel :: AMQP.ConnectionOpts -> IO (Either String AMQP.Channel)
 createChannel connOpts = runExceptT $ do
-  maybeConn <- liftIO $ (try $ AMQP.openConnection'' connOpts :: IO (Either AMQP.AMQPException AMQP.Connection))
+  maybeConn <- liftIO $ catchAmqp $ AMQP.openConnection'' connOpts
   conn <- except $ left show maybeConn
-  maybeChan <- liftIO $ (try $ AMQP.openChannel conn :: IO (Either AMQP.AMQPException AMQP.Channel))
+  maybeChan <- liftIO $ catchAmqp $ AMQP.openChannel conn
   except $ left show maybeChan
 
 createRabbitMqSource :: AMQP.ConnectionOpts -> T.Text -> IO (Either String (IO (Either NoMessageReason M.Message), [ReceiveId] -> IO ()))
@@ -83,7 +84,7 @@ createRabbitMqDestination :: AMQP.ConnectionOpts -> T.Text -> Maybe T.Text -> IO
 createRabbitMqDestination connOpts exchange routingKey = runExceptT $ do
   maybeChan <- liftIO $ createChannel connOpts
   channel <- except $ left show maybeChan
-  mightFail <- liftIO $ (try $ AMQP.confirmSelect channel False :: IO (Either AMQP.AMQPException ()))
+  mightFail <- liftIO $ catchAmqp $ AMQP.confirmSelect channel False
   except $ left show mightFail
   return $ rabbitPublish channel exchange routingKey
 
