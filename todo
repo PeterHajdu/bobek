@@ -1,3 +1,5 @@
+ - add new filter action (nothing)
+ - copy message only if needed
  - add scriptfilter
  - add logging
  - extract bulk size to config
