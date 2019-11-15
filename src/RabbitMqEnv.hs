@@ -1,5 +1,6 @@
 module RabbitMqEnv(createRabbitMqSource, createRabbitMqDestination) where
 
+import Env(SourceFunctions(..))
 import qualified Message as M
 import Source
 import Destination
@@ -75,10 +76,10 @@ createChannel connOpts = runExceptT $ do
   maybeChan <- liftIO $ catchAmqp $ AMQP.openChannel conn
   except $ left show maybeChan
 
-createRabbitMqSource :: AMQP.ConnectionOpts -> T.Text -> IO (Either String (IO (Either NoMessageReason M.Message), [ReceiveId] -> IO ()))
+createRabbitMqSource :: AMQP.ConnectionOpts -> T.Text -> IO (Either String SourceFunctions)
 createRabbitMqSource connOpts queue = do
   maybeChan <- createChannel connOpts
-  return $ bimap show (\chan -> (rabbitReceive chan queue, rabbitAcknowledge chan)) maybeChan
+  return $ bimap show (\chan -> MkSourceFunctions (rabbitReceive chan queue) (rabbitAcknowledge chan)) maybeChan
 
 createRabbitMqDestination :: AMQP.ConnectionOpts -> T.Text -> Maybe T.Text -> IO (Either String ([M.Message] -> IO PublishResult))
 createRabbitMqDestination connOpts exchange routingKey = runExceptT $ do

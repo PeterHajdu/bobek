@@ -19,6 +19,8 @@ import Control.Arrow(left)
 
 import Data.Text()
 
+import Env(SourceFunctions(..))
+
 routingKeySeparator :: Char
 routingKeySeparator = ' '
 
@@ -38,14 +40,13 @@ recv handle = do
   return $ maybeBody >>= parseRoutingKeyAndMessage
   where mapError e = if isEOFError e then NMREmptyQueue else NMRError $ show e
 
-createStdinSource :: (IO (Either NoMessageReason Message), [ReceiveId] -> IO ())
-createStdinSource = (recv stdin, const $ return ())
+createStdinSource :: SourceFunctions
+createStdinSource = MkSourceFunctions (recv stdin) (const $ return ())
 
---todo: extract source functions to a named data structure
-createFileSource :: FilePath -> IO (Either String (IO (Either NoMessageReason Message), [ReceiveId] -> IO ()))
+createFileSource :: FilePath -> IO (Either String SourceFunctions)
 createFileSource filePath = do
   maybeHandle <- catchIO $ openFile filePath ReadMode
-  return $ bimap show (\handle -> (recv handle, const $ return ())) maybeHandle
+  return $ bimap show (\handle -> MkSourceFunctions (recv handle) (const $ return ())) maybeHandle
 
 serializeMessage :: Message -> BSC.ByteString
 serializeMessage (MkMessage _ routingK msg) = (encodeUtf8 routingK) `BSC.append` (BSC.cons routingKeySeparator msg)

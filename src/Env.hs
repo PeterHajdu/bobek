@@ -1,6 +1,6 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
-module Env(Env(..), App(..), runMover) where
+module Env(Env(..), App(..), runMover, SourceFunctions(..)) where
 
 import Mover
 import Source
@@ -9,12 +9,13 @@ import ReceiveId
 import Message
 import Filter
 import Control.Monad.Trans.Reader (ReaderT)
-import Control.Monad.Reader (MonadReader, liftIO, ask, MonadIO, runReaderT)
+import Control.Monad.Reader (MonadReader, liftIO, ask, asks, MonadIO, runReaderT)
+
+data SourceFunctions = MkSourceFunctions (IO (Either NoMessageReason Message)) ([ReceiveId] -> IO ())
 
 data Env = MkEnv
   { envPublish :: [Message] -> IO PublishResult
-  , envReceive :: IO (Either NoMessageReason Message)
-  , envAcknowledge :: [ReceiveId] -> IO ()
+  , sourceFunctions :: SourceFunctions
   , envFilterAction :: Message -> IO FilterAction
   }
 
@@ -27,11 +28,11 @@ instance Destination App where
 
 instance Source App where
   receive = do
-    env <- ask
-    liftIO $ envReceive env
+    (MkSourceFunctions recv  _) <- asks sourceFunctions
+    liftIO recv
   acknowledge ids = do
-    env <- ask
-    liftIO $ (envAcknowledge env) ids
+    (MkSourceFunctions _ ack) <- asks sourceFunctions
+    liftIO $ ack ids
 
 instance Filter App where
   filterAction msg = do
