@@ -1,4 +1,3 @@
- - use partitionEithers
  - add logging
  - add scriptfilter
  - extract bulk size to config

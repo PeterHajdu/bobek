@@ -7,7 +7,7 @@ import Source
 import Message()
 import Filter
 
-import Data.Either (lefts, rights)
+import Data.Either (partitionEithers)
 import Control.Monad (unless, replicateM)
 
 bulkSize :: Int
@@ -16,8 +16,7 @@ bulkSize = 1000
 getMessages :: Source m => m (Either NoMessageReason [Message])
 getMessages = do
   maybeMessages <- replicateM bulkSize receive
-  let messages = rights maybeMessages
-  let errors = lefts maybeMessages
+  let (errors, messages) = partitionEithers maybeMessages
   return $ if null messages
            then Left $ head errors
            else Right $ messages
