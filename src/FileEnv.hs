@@ -33,20 +33,20 @@ parseRoutingKeyAndMessage line =
     (_, "") -> Left $ NMRError "Missing routing key."
     (routingK, msg) -> Right $ MkMessage (MkReceiveId 0) (decodeUtf8 routingK) msg
 
-recv :: Handle -> IO (Either NoMessageReason Message)
-recv handle = do
+readFromFile :: Handle -> IO (Either NoMessageReason Message)
+readFromFile handle = do
   maybeLine <- catchIO $ BSC.hGetLine handle
   let maybeBody = left mapError maybeLine
   return $ maybeBody >>= parseRoutingKeyAndMessage
   where mapError e = if isEOFError e then NMREmptyQueue else NMRError $ show e
 
 createStdinSource :: SourceFunctions
-createStdinSource = MkSourceFunctions (recv stdin) (const $ return ())
+createStdinSource = MkSourceFunctions (readFromFile stdin) (const $ return ())
 
 createFileSource :: FilePath -> IO (Either String SourceFunctions)
 createFileSource filePath = do
   maybeHandle <- catchIO $ openFile filePath ReadMode
-  return $ bimap show (\handle -> MkSourceFunctions (recv handle) (const $ return ())) maybeHandle
+  return $ bimap show (\handle -> MkSourceFunctions (readFromFile handle) (const $ return ())) maybeHandle
 
 serializeMessage :: Message -> BSC.ByteString
 serializeMessage (MkMessage _ routingK msg) = (encodeUtf8 routingK) `BSC.append` (BSC.cons routingKeySeparator msg)
