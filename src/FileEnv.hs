@@ -4,6 +4,7 @@ import Message
 import Source
 import Destination
 import ReceiveId
+import Util(tshow)
 
 import qualified Data.ByteString.Char8 as BSC(append, cons, hGetLine, hPutStrLn, ByteString, span)
 
@@ -17,7 +18,7 @@ import Data.Bifunctor(bimap)
 import Data.Either(lefts, rights)
 import Control.Arrow(left)
 
-import Data.Text()
+import qualified Data.Text as T
 
 import Env(SourceFunctions(..))
 
@@ -43,10 +44,10 @@ readFromFile handle = do
 createStdinSource :: SourceFunctions
 createStdinSource = MkSourceFunctions (readFromFile stdin) (const $ return ())
 
-createFileSource :: FilePath -> IO (Either String SourceFunctions)
+createFileSource :: FilePath -> IO (Either T.Text SourceFunctions)
 createFileSource filePath = do
   maybeHandle <- catchIO $ openFile filePath ReadMode
-  return $ bimap show (\handle -> MkSourceFunctions (readFromFile handle) (const $ return ())) maybeHandle
+  return $ bimap tshow (\handle -> MkSourceFunctions (readFromFile handle) (const $ return ())) maybeHandle
 
 serializeMessage :: Message -> BSC.ByteString
 serializeMessage (MkMessage _ routingK msg) = (encodeUtf8 routingK) `BSC.append` (BSC.cons routingKeySeparator msg)
@@ -62,10 +63,10 @@ writeToFile handle messages = do
           let rid = receiveId msg
           return $ bimap (const rid) (const rid) result
 
-createFileDestination :: FilePath -> IO (Either String ([Message] -> IO PublishResult))
+createFileDestination :: FilePath -> IO (Either T.Text ([Message] -> IO PublishResult))
 createFileDestination filePath = do
   maybeHandle <- catchIO $ openFile filePath AppendMode
-  return $ bimap show writeToFile maybeHandle
+  return $ bimap tshow writeToFile maybeHandle
 
 createStdoutDestination :: [Message] -> IO PublishResult
 createStdoutDestination = writeToFile stdout

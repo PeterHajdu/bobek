@@ -6,6 +6,7 @@ import Source
 import Destination
 import ReceiveId
 
+import Util(tshow)
 import Data.List (partition)
 import Data.IntSet (IntSet, member)
 import Data.Maybe (fromMaybe)
@@ -69,23 +70,23 @@ rabbitAcknowledge channel ids = void $ traverse ackMessage ids
   where ackMessage :: ReceiveId -> IO (Either AMQP.AMQPException ())
         ackMessage (MkReceiveId i) = catchAmqp $ AMQP.ackMsg channel i False
 
-createChannel :: AMQP.ConnectionOpts -> IO (Either String AMQP.Channel)
+createChannel :: AMQP.ConnectionOpts -> IO (Either T.Text AMQP.Channel)
 createChannel connOpts = runExceptT $ do
   maybeConn <- liftIO $ catchAmqp $ AMQP.openConnection'' connOpts
-  conn <- except $ left show maybeConn
+  conn <- except $ left tshow maybeConn
   maybeChan <- liftIO $ catchAmqp $ AMQP.openChannel conn
-  except $ left show maybeChan
+  except $ left tshow maybeChan
 
-createRabbitMqSource :: AMQP.ConnectionOpts -> T.Text -> IO (Either String SourceFunctions)
+createRabbitMqSource :: AMQP.ConnectionOpts -> T.Text -> IO (Either T.Text SourceFunctions)
 createRabbitMqSource connOpts queue = do
   maybeChan <- createChannel connOpts
-  return $ bimap show (\chan -> MkSourceFunctions (rabbitReceive chan queue) (rabbitAcknowledge chan)) maybeChan
+  return $ bimap tshow (\chan -> MkSourceFunctions (rabbitReceive chan queue) (rabbitAcknowledge chan)) maybeChan
 
-createRabbitMqDestination :: AMQP.ConnectionOpts -> T.Text -> Maybe T.Text -> IO (Either String ([M.Message] -> IO PublishResult))
+createRabbitMqDestination :: AMQP.ConnectionOpts -> T.Text -> Maybe T.Text -> IO (Either T.Text ([M.Message] -> IO PublishResult))
 createRabbitMqDestination connOpts exchange routingKey = runExceptT $ do
   maybeChan <- liftIO $ createChannel connOpts
-  channel <- except $ left show maybeChan
+  channel <- except $ left tshow maybeChan
   mightFail <- liftIO $ catchAmqp $ AMQP.confirmSelect channel False
-  except $ left show mightFail
+  except $ left tshow mightFail
   return $ rabbitPublish channel exchange routingKey
 

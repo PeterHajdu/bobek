@@ -9,6 +9,7 @@ import Destination
 import OptParse
 import Data.Text
 import ScriptFilter
+import Log
 
 import qualified Network.AMQP as AMQP(fromURI)
 
@@ -16,13 +17,13 @@ import Options.Applicative
 import Data.Semigroup ((<>))
 import Data.Maybe (fromMaybe)
 
-printError :: String -> IO ()
-printError errorMsg = putStrLn $ "Unable to initialize rabbitmq environment: " ++ errorMsg
+printError :: Text -> IO ()
+printError errorMsg = ioErrorLog $ "Unable to initialize rabbitmq environment: " `append` errorMsg
 
 createEnv :: (M.Message -> IO FilterActions) -> ([M.Message] -> IO PublishResult) -> SourceFunctions -> Env
 createEnv fltr pub sourceFuncs = MkEnv pub sourceFuncs fltr
 
-type PublisherFunction = Either String ([M.Message] -> IO PublishResult)
+type PublisherFunction = Either Text ([M.Message] -> IO PublishResult)
 
 createDestination :: DestinationOpts -> IO PublisherFunction
 createDestination Stdout = return $ Right $ createStdoutDestination
@@ -30,7 +31,7 @@ createDestination (Outfile filePath) = createFileDestination filePath
 createDestination (Exchange uri ex maybeRk) =
     createRabbitMqDestination (AMQP.fromURI uri) (pack ex) (pack <$> maybeRk)
 
-createSource :: SourceOpts -> IO (Either String SourceFunctions)
+createSource :: SourceOpts -> IO (Either Text SourceFunctions)
 createSource Stdin = return $ Right $ createStdinSource
 createSource (Infile filePath) = createFileSource filePath
 createSource (Queue uri queueName) = createRabbitMqSource (AMQP.fromURI uri) (pack queueName)
