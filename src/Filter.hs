@@ -1,16 +1,14 @@
-module Filter(Filter(..), FilterAction(..), shouldAck) where
+module Filter(Filter(..), FilterAction(..), FilterActions) where
 
 import Message
+
+type FilterActions = [FilterAction]
 
 data FilterAction =
     Ack
   | Copy
-  | CopyAndAck
+  deriving (Eq, Show)
 
-shouldAck :: FilterAction -> Bool
-shouldAck Copy = False
-shouldAck _ = True
-
-class Filter m where
-  filterAction :: Message -> m FilterAction
+class Monad m => Filter m where
+  filterAction :: Message -> m FilterActions
 

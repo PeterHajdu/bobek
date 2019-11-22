@@ -6,9 +6,14 @@ import Message
 import Source
 import Message()
 import Filter
+import ReceiveId
 
-import Data.Either (partitionEithers)
-import Control.Monad (unless, replicateM)
+import Data.Either(partitionEithers)
+import Data.List(foldl')
+import Control.Monad(unless, replicateM)
+
+import Data.Set()
+import qualified Data.Set as Set
 
 bulkSize :: Int
 bulkSize = 1000
@@ -21,14 +26,32 @@ getMessages = do
            then Left $ head errors
            else Right $ messages
 
+runFilter :: Filter m => [Message] -> m [(FilterActions, Message)]
+runFilter msgs = do
+  filterActions <- traverse filterAction msgs
+  return $ zip filterActions msgs
+
+splitUpMessagesByAction :: [(FilterActions, Message)] -> (Set.Set ReceiveId, [Message], Set.Set ReceiveId)
+splitUpMessagesByAction = foldl' splitter (Set.empty, [], Set.empty)
+  where splitter (oldAck, oldPub, oldNoPub) (actions, msg) =
+          let newAck = if (Ack `elem` actions) then Set.insert (receiveId msg) oldAck else oldAck
+              newPub = if (Copy `elem` actions) then msg:oldPub else oldPub
+              newNoPub = if (Copy `elem` actions) then oldNoPub else Set.insert (receiveId msg) oldNoPub
+           in (newAck, newPub, newNoPub)
+
+publishMessages :: Destination m => [Message] -> m (Set.Set ReceiveId)
+publishMessages msgs = if null msgs
+                       then return Set.empty
+                       else (Set.fromList . succeeded) <$> publish msgs
+
 publishAndAckMessages :: forall m.(Source m, Destination m, Filter m) => [Message] -> m ()
 publishAndAckMessages msgs = do
-  publishResult <- publish msgs
-  filterActions <- traverse filterAction msgs
-  let actionWithId = zip filterActions (receiveId <$> msgs)
-  let needsAck = filter (shouldAck . fst) actionWithId
-  let toBeAcked = filter (\i -> elem i $ succeeded publishResult) (snd <$> needsAck)
-  _ <- unless (null toBeAcked) $ acknowledge toBeAcked
+  actionsWithMessage <- runFilter msgs
+  let (needsAck, needsPublish, doesNotNeedPublish) = splitUpMessagesByAction actionsWithMessage
+  publishedIds <- publishMessages (reverse needsPublish)
+  let canAck = Set.union publishedIds doesNotNeedPublish
+  let toBeAcked = Set.intersection canAck needsAck
+  _ <- unless (Set.null toBeAcked) $ acknowledge (Set.toList toBeAcked)
   return ()
 
 moveMessages :: (Source m, Destination m, Filter m) => m ()

@@ -20,7 +20,7 @@ data Environment = MkEnv {
   , acknowledgedMessages :: [[ReceiveId]]
   , published :: [[Message]]
   , publishFun :: [Message] -> PublishResult
-  , filterFun :: Message -> FilterAction
+  , filterFun :: Message -> FilterActions
 }
 
 newtype FakeEnvironment a = MkFakeEnvironment {run :: State Environment a} deriving (Functor, Applicative, Monad, MonadState Environment)
@@ -45,6 +45,6 @@ instance Destination FakeEnvironment where
 
 instance Filter FakeEnvironment where
   filterAction message = do
-    oldEnv@(MkEnv _ _ _ _ filterFun) <- get
-    return (filterFun message)
+    (MkEnv _ _ _ _ f) <- get
+    return (f message)
 

@@ -4,11 +4,9 @@ import ReceiveId(ReceiveId(..))
 import Test.Hspec
 import FakeEnvironment
 import Message
-import Source
 import Destination
 import Filter
 import Data.Bifoldable (biList)
-import Data.List (partition)
 
 makeId :: Integral a => a -> ReceiveId
 makeId n = MkReceiveId $ fromIntegral n
@@ -16,8 +14,8 @@ makeId n = MkReceiveId $ fromIntegral n
 makeMessages :: Int -> [Message]
 makeMessages n = (\rid -> (MkMessage (makeId rid) "routing key" "test message")) <$> [1..n]
 
-bothFilter :: Message -> FilterAction
-bothFilter = const CopyAndAck
+bothFilter :: Message -> FilterActions
+bothFilter = const [Copy, Ack]
 
 twoBulkMessages :: [Message]
 twoBulkMessages = makeMessages 1500
@@ -60,6 +58,12 @@ main = hspec $ do
       (acknowledgedMessages result) `shouldBe` [toBeAcked]
 
     it "should acknowledge messages only if the filter asks for it" $ do
-      let onlyCopy = const Copy
+      let onlyCopy = const [Copy]
       let result = runMoveMessages (MkEnv (Right <$> onePageMessages) [] [] allSucceeds onlyCopy)
       (acknowledgedMessages result) `shouldBe` []
+
+    it "should copy the messages only if the filter asks for it" $ do
+      let onlyAck = const [Ack]
+      let result = runMoveMessages (MkEnv (Right <$> twoBulkMessages) [] [] allSucceeds onlyAck)
+      (acknowledgedMessages result) `shouldBe` twoBulksOfIds
+      (null $ published result) `shouldBe` True

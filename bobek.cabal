@@ -18,6 +18,7 @@ test-suite test
                      , hspec
                      , mtl
                      , safe
+                     , containers
                      , bytestring
                      , text
   other-modules:       FakeEnvironment
