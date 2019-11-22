@@ -25,6 +25,7 @@ test-suite test
   other-modules:       FakeEnvironment
                      , Source
                      , ScriptFilter
+                     , Log
                      , Destination
                      , Filter
                      , Message
@@ -54,6 +55,7 @@ executable bobek
                      , Filter
                      , ScriptFilter
                      , Env
+                     , Log
                      , RabbitMqEnv
                      , FileEnv
                      , OptParse

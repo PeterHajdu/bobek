@@ -7,6 +7,7 @@ import Source
 import Message()
 import Filter
 import ReceiveId
+import Log(Logger(..))
 
 import Data.Either(partitionEithers)
 import Data.List(foldl')
@@ -14,6 +15,7 @@ import Control.Monad(unless, replicateM)
 
 import Data.Set()
 import qualified Data.Set as Set
+import qualified Data.Text as T(concat, pack)
 
 bulkSize :: Int
 bulkSize = 1000
@@ -44,7 +46,7 @@ publishMessages msgs = if null msgs
                        then return Set.empty
                        else (Set.fromList . succeeded) <$> publish msgs
 
-publishAndAckMessages :: forall m.(Source m, Destination m, Filter m) => [Message] -> m ()
+publishAndAckMessages :: forall m.(Logger m, Source m, Destination m, Filter m) => [Message] -> m ()
 publishAndAckMessages msgs = do
   actionsWithMessage <- runFilter msgs
   let (needsAck, needsPublish, doesNotNeedPublish) = splitUpMessagesByAction actionsWithMessage
@@ -52,13 +54,21 @@ publishAndAckMessages msgs = do
   let canAck = Set.union publishedIds doesNotNeedPublish
   let toBeAcked = Set.intersection canAck needsAck
   _ <- unless (Set.null toBeAcked) $ acknowledge (Set.toList toBeAcked)
+  logDebug $ T.concat [" needsPublish: ", (T.pack $ show $ length needsPublish),
+                       " published: ", (T.pack $ show $ length needsPublish),
+                       " needsAck: ", (T.pack $ show $ length needsAck),
+                       " acked: ", (T.pack $ show $ length toBeAcked)]
   return ()
 
-moveMessages :: (Source m, Destination m, Filter m) => m ()
+moveMessages :: (Logger m, Source m, Destination m, Filter m) => m ()
 moveMessages = do
+  logDebug "Reading messages."
   maybeMessages <- getMessages
   case maybeMessages of
-    Left _ -> return ()
+    Left msg -> do
+      logDebug $ T.concat ["Failed to read messages: ", (T.pack $ show msg)]
+      return ()
     Right messages -> do
+      logDebug "Publishing messages."
       publishAndAckMessages messages
       moveMessages

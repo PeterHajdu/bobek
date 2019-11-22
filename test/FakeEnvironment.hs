@@ -11,6 +11,7 @@ import Control.Monad.State.Strict (State, execState)
 import Control.Monad.State (MonadState, get, put)
 import Safe(tailSafe, headDef)
 import Filter
+import Log(Logger(..))
 
 runMoveMessages :: Environment -> Environment
 runMoveMessages env = execState (run moveMessages) env
@@ -48,3 +49,6 @@ instance Filter FakeEnvironment where
     (MkEnv _ _ _ _ f) <- get
     return (f message)
 
+instance Logger FakeEnvironment where
+  logError = const $ return ()
+  logDebug = logError
