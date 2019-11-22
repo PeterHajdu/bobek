@@ -2,7 +2,7 @@
 
 module Env(Env(..), App(..), runMover, SourceFunctions(..)) where
 
-import Log(Logger(..))
+import Log
 import Mover
 import Source
 import Destination
@@ -11,7 +11,6 @@ import Message
 import Filter
 import Control.Monad.Trans.Reader (ReaderT)
 import Control.Monad.Reader (MonadReader, liftIO, ask, asks, MonadIO, runReaderT)
-import qualified Data.Text.IO as T(putStrLn)
 
 data SourceFunctions = MkSourceFunctions (IO (Either NoMessageReason Message)) ([ReceiveId] -> IO ())
 
@@ -42,8 +41,8 @@ instance Filter App where
     liftIO $ (envFilterAction env) msg
 
 instance Logger App where
-  logError = liftIO . T.putStrLn
-  logDebug = logError
+  logError = ioErrorLog
+  logDebug = ioDebugLog
 
 runMover :: Env -> IO ()
 runMover = runReaderT (run moveMessages)
