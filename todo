@@ -1,7 +1,5 @@
- - add new filter action (nothing)
- - copy message only if needed
- - add scriptfilter
  - add logging
+ - fix script filter protocol (length of message in first line)
  - extract bulk size to config
 
 to be decided:
