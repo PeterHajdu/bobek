@@ -14,7 +14,7 @@ cabal-version:       >=1.10
 test-suite test
   main-is:             Test.hs
   type:                exitcode-stdio-1.0
-  build-depends:       base >=4.10
+  build-depends:       base >=4.9
                      , hspec
                      , mtl
                      , process
@@ -61,7 +61,7 @@ executable bobek
                      , RabbitMqEnv
                      , FileEnv
                      , OptParse
-  build-depends:       base >=4.10
+  build-depends:       base >= 4.9
                      , amqp
                      , bytestring
                      , process
