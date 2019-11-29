@@ -43,6 +43,7 @@ instance ParseRecord FilterOpt where parseRecord = parseRecordWithModifiers mods
 data Opts = Opts { src :: SourceOpts
                  , dst :: DestinationOpts
                  , messageFilter :: Maybe FilterOpt
+                 , debug :: Bool
                  }
 
 optionParser :: Parser Opts -- TODO: help is printed 3 times..
@@ -50,3 +51,4 @@ optionParser = Opts
   <$> parseRecord
   <*> parseRecord
   <*> (optional $ parseRecord)
+  <*> switch(long "debug" <> help "Enable debug logging" )

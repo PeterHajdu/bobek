@@ -18,6 +18,7 @@ data Env = MkEnv
   { envPublish :: [Message] -> IO PublishResult
   , sourceFunctions :: SourceFunctions
   , envFilterAction :: Message -> IO FilterActions
+  , logFunctions :: LogFunctions
   }
 
 newtype App a = MkApp {run :: ReaderT Env IO a} deriving (Functor, Applicative, Monad, MonadReader Env, MonadIO)
@@ -41,8 +42,15 @@ instance Filter App where
     liftIO $ (envFilterAction env) msg
 
 instance Logger App where
-  logError = ioErrorLog
-  logDebug = ioDebugLog
+  logError msg = do
+    env <- ask
+    let errorF = errorFunction . logFunctions $ env
+    liftIO $ errorF msg
+
+  logDebug msg = do
+    env <- ask
+    let debugF = debugFunction . logFunctions $ env
+    liftIO $ debugF msg
 
 runMover :: Env -> IO ()
 runMover = runReaderT (run moveMessages)

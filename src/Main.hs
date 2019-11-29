@@ -20,9 +20,6 @@ import Data.Maybe (fromMaybe)
 printError :: Text -> IO ()
 printError errorMsg = ioErrorLog $ "Unable to initialize rabbitmq environment: " `append` errorMsg
 
-createEnv :: (M.Message -> IO FilterActions) -> ([M.Message] -> IO PublishResult) -> SourceFunctions -> Env
-createEnv fltr pub sourceFuncs = MkEnv pub sourceFuncs fltr
-
 type PublisherFunction = Either Text ([M.Message] -> IO PublishResult)
 
 createDestination :: DestinationOpts -> IO PublisherFunction
@@ -48,4 +45,5 @@ main = do
   maybePublisher <- createDestination $ dst opts
   maybeSource <- createSource $ src opts
   let mfilter = fromMaybe defaultFilter (createFilter <$> (messageFilter opts))
-  either printError runMover ((createEnv mfilter) <$> maybePublisher <*> maybeSource)
+  let logfunctions = if (debug opts) then logWithDebug else logOnlyErrors
+  either printError runMover (MkEnv <$> maybePublisher <*> maybeSource <*> (Right mfilter) <*> (Right logfunctions) )
