@@ -1,3 +1,6 @@
+ - hlint
+ - coverage
+ - use phantom type parameter to track published state of messages
  - fix script filter protocol (length of message in first line)
  - extract bulk size to config
 
