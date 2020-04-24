@@ -1,3 +1,4 @@
+ - split up to library and executable
  - hlint
  - coverage
  - make sub probject Bobek
