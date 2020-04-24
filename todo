@@ -1,6 +1,4 @@
- - split up to library and executable
  - hlint
- - coverage
  - make sub probject Bobek
  - safe prelude
  - fix script filter protocol (length of message in first line, json?, base64)

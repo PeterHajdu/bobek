@@ -63,16 +63,8 @@ test-suite test
                      , containers
                      , bytestring
                      , text
-  other-modules: Bobek.Destination
-                 Bobek.Filter
-                 Bobek.Message
-                 Bobek.ReceiveId
-                 Bobek.ScriptFilter
-                 Bobek.Source
-                 Bobek.Mover
-                 Bobek.Log
-                 Bobek.Test.FakeEnvironment
-  hs-source-dirs:      test lib
+  other-modules: Bobek.Test.FakeEnvironment
+  hs-source-dirs:      test
   default-language:    Haskell2010
   default-extensions:  DerivingStrategies, OverloadedStrings
   ghc-options:         -Weverything

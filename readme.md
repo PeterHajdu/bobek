@@ -14,3 +14,11 @@ cabal new-install ormolu
 ``` bash
 make format
 ```
+
+# coverage information
+
+``` bash
+cabal clean
+cabal new-configure --enable-test --enable-coverage
+caba new-test
+```
