@@ -1,13 +1,13 @@
 module Main (main) where
 
+import Bobek.Destination
+import Bobek.Filter
+import Bobek.Message
+import Bobek.ReceiveId (ReceiveId (..))
+import Bobek.ScriptFilter
+import Bobek.Source ()
+import Bobek.Test.FakeEnvironment
 import Data.Bifoldable (biList)
-import Destination
-import FakeEnvironment
-import Filter
-import Message
-import ReceiveId (ReceiveId (..))
-import ScriptFilter
-import Source ()
 import Test.Hspec
 
 makeId :: Integral a => a -> ReceiveId

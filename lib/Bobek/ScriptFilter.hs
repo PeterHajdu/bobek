@@ -1,8 +1,8 @@
-module ScriptFilter (scriptFilter, defaultFilter, parseAction) where
+module Bobek.ScriptFilter (scriptFilter, defaultFilter, parseAction) where
 
+import Bobek.Filter
+import Bobek.Message
 import qualified Data.ByteString.Char8 as BSC (ByteString, breakSubstring, hGetLine, hPutStrLn, null)
-import Filter
-import Message
 import System.IO (hFlush)
 import System.Process
 

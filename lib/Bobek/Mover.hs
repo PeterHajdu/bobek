@@ -1,23 +1,23 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module Mover
+module Bobek.Mover
   ( moveMessages,
   )
 where
 
+import Bobek.Destination
+import Bobek.Filter
+import Bobek.Log (Logger (..))
+import Bobek.Message
+import Bobek.Message ()
+import Bobek.ReceiveId
+import Bobek.Source
 import Control.Monad (replicateM, unless)
 import Data.Either (partitionEithers)
 import Data.List (foldl')
 import Data.Set ()
 import qualified Data.Set as Set
 import qualified Data.Text as T (concat, pack)
-import Destination
-import Filter
-import Log (Logger (..))
-import Message
-import Message ()
-import ReceiveId
-import Source
 
 bulkSize :: Int
 bulkSize = 1000

@@ -1,22 +1,22 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
-module FakeEnvironment
+module Bobek.Test.FakeEnvironment
   ( FakeEnvironment (..),
     Environment (..),
     runMoveMessages,
   )
 where
 
+import Bobek.Destination
+import Bobek.Filter
+import Bobek.Log (Logger (..))
+import Bobek.Message (Message)
+import Bobek.Mover
+import Bobek.ReceiveId (ReceiveId)
+import Bobek.Source
 import Control.Monad.State (MonadState, get, put)
 import Control.Monad.State.Strict (State, execState)
-import Destination
-import Filter
-import Log (Logger (..))
-import Message (Message)
-import Mover
-import ReceiveId (ReceiveId)
 import Safe (headDef, tailSafe)
-import Source
 
 runMoveMessages :: Environment -> Environment
 runMoveMessages env = execState (run moveMessages) env

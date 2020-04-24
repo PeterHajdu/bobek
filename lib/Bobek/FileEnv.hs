@@ -1,5 +1,11 @@
-module FileEnv (createStdoutDestination, createStdinSource, createFileSource, createFileDestination) where
+module Bobek.FileEnv (createStdoutDestination, createStdinSource, createFileSource, createFileDestination) where
 
+import Bobek.Destination
+import Bobek.Env (SourceFunctions (..))
+import Bobek.Message
+import Bobek.ReceiveId
+import Bobek.Source
+import Bobek.Util (tshow)
 import Control.Arrow (left)
 import Control.Exception (IOException, try)
 import Data.Bifunctor (bimap)
@@ -7,14 +13,8 @@ import qualified Data.ByteString.Char8 as BSC (ByteString, append, cons, hGetLin
 import Data.Either (lefts, rights)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeUtf8, encodeUtf8)
-import Destination
-import Env (SourceFunctions (..))
-import Message
-import ReceiveId
-import Source
 import System.IO (Handle, IOMode (AppendMode, ReadMode), hFlush, openFile, stdin, stdout)
 import System.IO.Error (isEOFError)
-import Util (tshow)
 
 routingKeySeparator :: Char
 routingKeySeparator = ' '

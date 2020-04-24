@@ -1,19 +1,19 @@
 module Main (main) where
 
+import Bobek.Destination
+import Bobek.Env
+import Bobek.FileEnv
+import Bobek.Filter (FilterAction (..), FilterActions (..))
+import Bobek.Log
+import qualified Bobek.Message as M
+import Bobek.OptParse
+import Bobek.RabbitMqEnv
+import Bobek.ScriptFilter
 import Data.Maybe (fromMaybe)
-import Data.Semigroup ((<>))
+import Data.Semigroup ()
 import Data.Text
-import Destination
-import Env
-import FileEnv
-import Filter (FilterAction (..), FilterActions (..))
-import Log
-import qualified Message as M
 import qualified Network.AMQP as AMQP (fromURI)
-import OptParse
 import Options.Applicative
-import RabbitMqEnv
-import ScriptFilter
 
 printError :: Text -> IO ()
 printError errorMsg = ioErrorLog $ "Unable to initialize rabbitmq environment: " `append` errorMsg

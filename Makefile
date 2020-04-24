@@ -1,4 +1,4 @@
 format:
-	ormolu -m inplace `find src test -iname "*.hs"`
+	ormolu -m inplace `find src lib test -iname "*.hs"`
 
 .PHONY: format

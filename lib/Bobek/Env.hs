@@ -1,6 +1,6 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
-module Env
+module Bobek.Env
   ( Env (..),
     App (..),
     runMover,
@@ -8,15 +8,15 @@ module Env
   )
 where
 
+import Bobek.Destination
+import Bobek.Filter
+import Bobek.Log
+import Bobek.Message
+import Bobek.Mover
+import Bobek.ReceiveId
+import Bobek.Source
 import Control.Monad.Reader (MonadIO, MonadReader, ask, asks, liftIO, runReaderT)
 import Control.Monad.Trans.Reader (ReaderT)
-import Destination
-import Filter
-import Log
-import Message
-import Mover
-import ReceiveId
-import Source
 
 data SourceFunctions = MkSourceFunctions (IO (Either NoMessageReason Message)) ([ReceiveId] -> IO ())
 
@@ -27,7 +27,7 @@ data Env = MkEnv
     logFunctions :: LogFunctions
   }
 
-newtype App a = MkApp {run :: ReaderT Env IO a} deriving (Functor, Applicative, Monad, MonadReader Env, MonadIO)
+newtype App a = MkApp {run :: ReaderT Env IO a} deriving newtype (Functor, Applicative, Monad, MonadReader Env, MonadIO)
 
 instance Destination App where
   publish msgs = do

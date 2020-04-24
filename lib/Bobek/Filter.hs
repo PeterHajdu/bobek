@@ -1,6 +1,6 @@
-module Filter (Filter (..), FilterAction (..), FilterActions (..), shouldAck, shouldCopy) where
+module Bobek.Filter (Filter (..), FilterAction (..), FilterActions (..), shouldAck, shouldCopy) where
 
-import Message
+import Bobek.Message
 
 newtype FilterActions = MkFilterActions [FilterAction]
 

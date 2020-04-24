@@ -1,8 +1,8 @@
-module Message (Message (..)) where
+module Bobek.Message (Message (..)) where
 
+import Bobek.ReceiveId (ReceiveId)
 import Data.ByteString (ByteString)
 import Data.Text (Text)
-import ReceiveId (ReceiveId)
 
 data Message = MkMessage
   { receiveId :: ReceiveId,

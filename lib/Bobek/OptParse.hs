@@ -4,7 +4,7 @@
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TypeOperators #-}
 
-module OptParse
+module Bobek.OptParse
   ( optionParser,
     DestinationOpts (..),
     SourceOpts (..),
@@ -31,7 +31,7 @@ data SourceOpts
       { srcUri :: String,
         queue :: String
       }
-  deriving (Show, Generic)
+  deriving stock (Show, Generic)
 
 instance ParseRecord SourceOpts where parseRecord = parseRecordWithModifiers mods
 
@@ -43,11 +43,11 @@ data DestinationOpts
         exchange :: String,
         routingKey :: Maybe String
       }
-  deriving (Show, Generic)
+  deriving stock (Show, Generic)
 
 instance ParseRecord DestinationOpts where parseRecord = parseRecordWithModifiers mods
 
-data FilterOpt = DontAck | ScriptFilter String deriving (Show, Generic)
+data FilterOpt = DontAck | ScriptFilter String deriving stock (Show, Generic)
 
 instance ParseRecord FilterOpt where parseRecord = parseRecordWithModifiers mods
 

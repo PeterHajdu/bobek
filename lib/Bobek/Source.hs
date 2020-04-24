@@ -1,7 +1,7 @@
-module Source (Source (..), NoMessageReason (..)) where
+module Bobek.Source (Source (..), NoMessageReason (..)) where
 
-import Message (Message)
-import ReceiveId (ReceiveId)
+import Bobek.Message (Message)
+import Bobek.ReceiveId (ReceiveId)
 
 data NoMessageReason
   = NMRError String

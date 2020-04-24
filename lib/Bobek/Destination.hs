@@ -1,7 +1,7 @@
-module Destination (DestinationError, Destination (..), PublishResult (..)) where
+module Bobek.Destination (DestinationError, Destination (..), PublishResult (..)) where
 
-import Message (Message)
-import ReceiveId (ReceiveId)
+import Bobek.Message (Message)
+import Bobek.ReceiveId (ReceiveId)
 
 newtype DestinationError = MkDestinationError String deriving stock (Show)
 

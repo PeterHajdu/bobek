@@ -1,4 +1,4 @@
-module Log (Logger (..), ioErrorLog, ioDebugLog, LogFunctions (..), logOnlyErrors, logWithDebug) where
+module Bobek.Log (Logger (..), ioErrorLog, ioDebugLog, LogFunctions (..), logOnlyErrors, logWithDebug) where
 
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Text

@@ -1,5 +1,11 @@
-module RabbitMqEnv (createRabbitMqSource, createRabbitMqDestination) where
+module Bobek.RabbitMqEnv (createRabbitMqSource, createRabbitMqDestination) where
 
+import Bobek.Destination
+import Bobek.Env (SourceFunctions (..))
+import qualified Bobek.Message as M
+import Bobek.ReceiveId
+import Bobek.Source
+import Bobek.Util (tshow)
 import Control.Arrow (left)
 import Control.Exception (try)
 import Control.Monad (join, void)
@@ -12,13 +18,7 @@ import Data.IntSet (IntSet, member)
 import Data.List (partition)
 import Data.Maybe (fromMaybe)
 import qualified Data.Text as T
-import Destination
-import Env (SourceFunctions (..))
-import qualified Message as M
 import qualified Network.AMQP as AMQP (AMQPException, Ack (..), Channel, ConfirmationResult (..), ConnectionOpts, DeliveryMode (..), Envelope (..), Message (..), ackMsg, confirmSelect, getMsg, newMsg, openChannel, openConnection'', publishMsg, waitForConfirms)
-import ReceiveId
-import Source
-import Util (tshow)
 
 catchAmqp :: IO a -> IO (Either AMQP.AMQPException a)
 catchAmqp = try

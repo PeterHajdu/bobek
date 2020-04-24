@@ -11,10 +11,51 @@ build-type:          Simple
 extra-source-files:  ChangeLog.md
 cabal-version:       >=1.10
 
+library
+  build-depends:       base >=4.10
+                     , amqp
+                     , bytestring
+                     , process
+                     , mtl
+                     , transformers
+                     , text
+                     , containers
+                     , optparse-generic
+                     , optparse-applicative
+  hs-source-dirs:      lib
+  default-language:    Haskell2010
+  default-extensions:  DerivingStrategies, OverloadedStrings
+  ghc-options:         -Weverything
+                       -Wno-missing-exported-signatures
+                       -Wno-implicit-prelude
+                       -Wno-missing-import-lists
+                       -Wno-missed-specialisations
+                       -Wno-all-missed-specialisations
+                       -Wno-unsafe
+                       -Wno-safe
+                       -Wno-missing-local-signatures
+                       -Wno-monomorphism-restriction
+                       -Wno-partial-fields
+                       -Werror
+  exposed-modules: Bobek.ScriptFilter
+                   Bobek.Message
+                   Bobek.ReceiveId
+                   Bobek.Filter
+                   Bobek.RabbitMqEnv
+                   Bobek.FileEnv
+                   Bobek.Source
+                   Bobek.Destination
+                   Bobek.Mover
+                   Bobek.OptParse
+                   Bobek.Env
+                   Bobek.Log
+  other-modules:   Bobek.Util
+
 test-suite test
   main-is:             Test.hs
   type:                exitcode-stdio-1.0
   build-depends:       base >=4.10
+                     , bobek
                      , hspec
                      , mtl
                      , process
@@ -22,17 +63,16 @@ test-suite test
                      , containers
                      , bytestring
                      , text
-  other-modules:       FakeEnvironment
-                     , Source
-                     , Util
-                     , ScriptFilter
-                     , Log
-                     , Destination
-                     , Filter
-                     , Message
-                     , Mover
-                     , ReceiveId
-  hs-source-dirs:      src, test
+  other-modules: Bobek.Destination
+                 Bobek.Filter
+                 Bobek.Message
+                 Bobek.ReceiveId
+                 Bobek.ScriptFilter
+                 Bobek.Source
+                 Bobek.Mover
+                 Bobek.Log
+                 Bobek.Test.FakeEnvironment
+  hs-source-dirs:      test lib
   default-language:    Haskell2010
   default-extensions:  DerivingStrategies, OverloadedStrings
   ghc-options:         -Weverything
@@ -49,32 +89,14 @@ test-suite test
 
 executable bobek
   main-is:             Main.hs
-  other-modules:       Source
-                     , Message
-                     , Destination
-                     , Mover
-                     , ReceiveId
-                     , Filter
-                     , ScriptFilter
-                     , Env
-                     , Log
-                     , Util
-                     , RabbitMqEnv
-                     , FileEnv
-                     , OptParse
   build-depends:       base >=4.10
+                     , bobek
                      , amqp
-                     , bytestring
-                     , process
-                     , mtl
-                     , transformers
                      , text
-                     , containers
-                     , optparse-generic
                      , optparse-applicative
   hs-source-dirs:      src
   default-language:    Haskell2010
-  default-extensions:  DerivingStrategies, OverloadedStrings
+  default-extensions:  OverloadedStrings
   ghc-options:         -Weverything
                        -Wno-missing-exported-signatures
                        -Wno-implicit-prelude

@@ -1,4 +1,4 @@
-module Util (tshow) where
+module Bobek.Util (tshow) where
 
 import Data.Text
 
