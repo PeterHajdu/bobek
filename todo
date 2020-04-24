@@ -1,3 +1,5 @@
+ - get rid of compiler warnings
+ - all warnings should be treated as errors
  - hlint
  - format
  - coverage
