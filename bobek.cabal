@@ -73,7 +73,7 @@ executable bobek
                      , optparse-applicative
   hs-source-dirs:      src
   default-language:    Haskell2010
-  default-extensions:          OverloadedStrings
+  default-extensions:  DerivingStrategies, OverloadedStrings
   ghc-options:         -Weverything
                        -Wno-missing-exported-signatures
                        -Wno-implicit-prelude
