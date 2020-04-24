@@ -1,9 +1,9 @@
  - hlint
+ - format
  - coverage
+ - fix script filter protocol (length of message in first line, json?, base64)
  - use phantom type parameter to track published state of messages
- - fix script filter protocol (length of message in first line)
  - extract bulk size to config
 
 to be decided:
  - should stop if publish fails for at least one message
- - binary message support
