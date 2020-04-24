@@ -9,4 +9,4 @@ data Message = MkMessage
     routingKey :: Text,
     message :: ByteString
   }
-  deriving (Eq, Show)
+  deriving stock (Eq, Show)

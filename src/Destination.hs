@@ -3,7 +3,7 @@ module Destination (DestinationError, Destination (..), PublishResult (..)) wher
 import Message (Message)
 import ReceiveId (ReceiveId)
 
-newtype DestinationError = MkDestinationError String deriving (Show)
+newtype DestinationError = MkDestinationError String deriving stock (Show)
 
 data PublishResult = MkPublishResult {failed :: [ReceiveId], succeeded :: [ReceiveId]}
 

@@ -13,7 +13,7 @@ instance Monoid FilterActions where
 data FilterAction
   = Ack
   | Copy
-  deriving (Eq, Show)
+  deriving stock (Eq, Show)
 
 shouldAck :: FilterActions -> Bool
 shouldAck (MkFilterActions actions) = elem Ack actions

@@ -34,7 +34,7 @@ test-suite test
                      , ReceiveId
   hs-source-dirs:      src, test
   default-language:    Haskell2010
-  default-extensions:          OverloadedStrings
+  default-extensions:  DerivingStrategies, OverloadedStrings
   ghc-options:         -Weverything
                        -Wno-missing-exported-signatures
                        -Wno-implicit-prelude
@@ -45,6 +45,7 @@ test-suite test
                        -Wno-safe
                        -Wno-missing-local-signatures
                        -Wno-monomorphism-restriction
+                       -Werror
 
 executable bobek
   main-is:             Main.hs
@@ -84,3 +85,4 @@ executable bobek
                        -Wno-safe
                        -Wno-missing-local-signatures
                        -Wno-monomorphism-restriction
+                       -Werror

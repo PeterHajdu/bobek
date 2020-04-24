@@ -29,7 +29,7 @@ data Environment = MkEnv
     filterFun :: Message -> FilterActions
   }
 
-newtype FakeEnvironment a = MkFakeEnvironment {run :: State Environment a} deriving (Functor, Applicative, Monad, MonadState Environment)
+newtype FakeEnvironment a = MkFakeEnvironment {run :: State Environment a} deriving newtype (Functor, Applicative, Monad, MonadState Environment)
 
 instance Source FakeEnvironment where
   receive = do
