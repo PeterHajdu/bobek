@@ -1,26 +1,20 @@
-module FileEnv(createStdoutDestination, createStdinSource, createFileSource, createFileDestination) where
+module FileEnv (createStdoutDestination, createStdinSource, createFileSource, createFileDestination) where
 
-import Message
-import Source
-import Destination
-import ReceiveId
-import Util(tshow)
-
-import qualified Data.ByteString.Char8 as BSC(append, cons, hGetLine, hPutStrLn, ByteString, span)
-
-import Data.Text.Encoding(encodeUtf8, decodeUtf8)
-
-import System.IO(Handle, IOMode(ReadMode, AppendMode), openFile, hFlush, stdout, stdin)
-import System.IO.Error(isEOFError )
-
-import Control.Exception(IOException, try)
-import Data.Bifunctor(bimap)
-import Data.Either(lefts, rights)
-import Control.Arrow(left)
-
+import Control.Arrow (left)
+import Control.Exception (IOException, try)
+import Data.Bifunctor (bimap)
+import qualified Data.ByteString.Char8 as BSC (ByteString, append, cons, hGetLine, hPutStrLn, span)
+import Data.Either (lefts, rights)
 import qualified Data.Text as T
-
-import Env(SourceFunctions(..))
+import Data.Text.Encoding (decodeUtf8, encodeUtf8)
+import Destination
+import Env (SourceFunctions (..))
+import Message
+import ReceiveId
+import Source
+import System.IO (Handle, IOMode (AppendMode, ReadMode), hFlush, openFile, stdin, stdout)
+import System.IO.Error (isEOFError)
+import Util (tshow)
 
 routingKeySeparator :: Char
 routingKeySeparator = ' '
@@ -39,7 +33,8 @@ readFromFile handle = do
   maybeLine <- catchIO $ BSC.hGetLine handle
   let maybeBody = left mapError maybeLine
   return $ maybeBody >>= parseRoutingKeyAndMessage
-  where mapError e = if isEOFError e then NMREmptyQueue else NMRError $ show e
+  where
+    mapError e = if isEOFError e then NMREmptyQueue else NMRError $ show e
 
 createStdinSource :: SourceFunctions
 createStdinSource = MkSourceFunctions (readFromFile stdin) (const $ return ())
@@ -57,11 +52,12 @@ writeToFile handle messages = do
   results <- traverse writeMessage messages
   hFlush handle
   return $ MkPublishResult (lefts results) (rights results)
-  where writeMessage :: Message -> IO (Either ReceiveId ReceiveId)
-        writeMessage msg = do
-          result <- catchIO $ BSC.hPutStrLn handle (serializeMessage msg)
-          let rid = receiveId msg
-          return $ bimap (const rid) (const rid) result
+  where
+    writeMessage :: Message -> IO (Either ReceiveId ReceiveId)
+    writeMessage msg = do
+      result <- catchIO $ BSC.hPutStrLn handle (serializeMessage msg)
+      let rid = receiveId msg
+      return $ bimap (const rid) (const rid) result
 
 createFileDestination :: FilePath -> IO (Either T.Text ([Message] -> IO PublishResult))
 createFileDestination filePath = do

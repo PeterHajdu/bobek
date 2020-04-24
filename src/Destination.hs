@@ -1,11 +1,11 @@
-module Destination(DestinationError, Destination(..), PublishResult(..))where
+module Destination (DestinationError, Destination (..), PublishResult (..)) where
 
-import Message(Message)
-import ReceiveId(ReceiveId)
+import Message (Message)
+import ReceiveId (ReceiveId)
 
-newtype DestinationError = MkDestinationError String deriving Show
+newtype DestinationError = MkDestinationError String deriving (Show)
+
 data PublishResult = MkPublishResult {failed :: [ReceiveId], succeeded :: [ReceiveId]}
 
 class Monad m => Destination m where
   publish :: [Message] -> m PublishResult
-

@@ -1,4 +1,4 @@
-module Filter(Filter(..), FilterAction(..), FilterActions(..), shouldAck, shouldCopy) where
+module Filter (Filter (..), FilterAction (..), FilterActions (..), shouldAck, shouldCopy) where
 
 import Message
 
@@ -10,8 +10,8 @@ instance Semigroup FilterActions where
 instance Monoid FilterActions where
   mempty = MkFilterActions []
 
-data FilterAction =
-    Ack
+data FilterAction
+  = Ack
   | Copy
   deriving (Eq, Show)
 
@@ -23,4 +23,3 @@ shouldCopy (MkFilterActions actions) = elem Copy actions
 
 class Monad m => Filter m where
   filterAction :: Message -> m FilterActions
-

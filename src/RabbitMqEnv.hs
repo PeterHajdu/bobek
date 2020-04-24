@@ -1,27 +1,24 @@
-module RabbitMqEnv(createRabbitMqSource, createRabbitMqDestination) where
+module RabbitMqEnv (createRabbitMqSource, createRabbitMqDestination) where
 
-import Env(SourceFunctions(..))
-import qualified Message as M
-import Source
-import Destination
-import ReceiveId
-
-import Util(tshow)
-import Data.List (partition)
+import Control.Arrow (left)
+import Control.Exception (try)
+import Control.Monad (join, void)
+import Control.Monad.IO.Class (liftIO)
+import Control.Monad.Trans.Except (except, runExceptT)
+import Data.Bifunctor (bimap)
+import Data.ByteString.Lazy (fromStrict, toStrict)
+import Data.Either (lefts, rights)
 import Data.IntSet (IntSet, member)
+import Data.List (partition)
 import Data.Maybe (fromMaybe)
-import Data.Either(lefts, rights)
 import qualified Data.Text as T
-import Data.ByteString.Lazy (toStrict, fromStrict)
-import qualified Network.AMQP as AMQP(AMQPException, ConnectionOpts, publishMsg, DeliveryMode(..), newMsg, openChannel, openConnection'', Channel, getMsg, Message(..), Ack(..), ackMsg, Envelope(..), confirmSelect, waitForConfirms, ConfirmationResult(..))
-import Control.Monad(void, join)
-import Control.Monad.IO.Class(liftIO)
-
-import Control.Monad.Trans.Except(runExceptT, except)
-import Control.Exception(try)
-
-import Control.Arrow(left)
-import Data.Bifunctor(bimap)
+import Destination
+import Env (SourceFunctions (..))
+import qualified Message as M
+import qualified Network.AMQP as AMQP (AMQPException, Ack (..), Channel, ConfirmationResult (..), ConnectionOpts, DeliveryMode (..), Envelope (..), Message (..), ackMsg, confirmSelect, getMsg, newMsg, openChannel, openConnection'', publishMsg, waitForConfirms)
+import ReceiveId
+import Source
+import Util (tshow)
 
 catchAmqp :: IO a -> IO (Either AMQP.AMQPException a)
 catchAmqp = try
@@ -31,23 +28,23 @@ rabbitPublish channel exchange maybeRoutingKey messages = do
   publishResult <- traverse (\msg -> publishToRabbitMq msg) messages
   confirmResult <- catchAmqp $ AMQP.waitForConfirms channel
   return $ either (const confirmFailed) (pubFromConfirmResult publishResult) confirmResult
-
-
-  where publishToRabbitMq :: M.Message -> IO (Either ReceiveId (Int, ReceiveId))
-        publishToRabbitMq msg = do
-          let (rabbitMessage, routingKeyInMessage) = extractMessageRoutingKey msg
-          let routingKey = fromMaybe routingKeyInMessage maybeRoutingKey
-          result <- catchAmqp $ AMQP.publishMsg channel exchange routingKey rabbitMessage
-          let rid = M.receiveId msg
-          return $ bimap (const rid) (\seqNum -> (fromMaybe (error "Sequence number should be present always.") seqNum, rid)) result
-        confirmFailed = MkPublishResult (M.receiveId <$> messages) []
-        pubFromConfirmResult publishResult confirmResult = let confirmed = acked confirmResult
-                                                               (ok, nok) = partition (\(pid, _) -> member pid confirmed) (rights publishResult)
-                                                            in MkPublishResult (lefts publishResult ++ (snd <$> nok)) (snd <$> ok)
-        acked :: AMQP.ConfirmationResult -> IntSet
-        acked res = case res of
-                      AMQP.Complete (ok, _) -> ok
-                      AMQP.Partial _ -> error "Impossible."
+  where
+    publishToRabbitMq :: M.Message -> IO (Either ReceiveId (Int, ReceiveId))
+    publishToRabbitMq msg = do
+      let (rabbitMessage, routingKeyInMessage) = extractMessageRoutingKey msg
+      let routingKey = fromMaybe routingKeyInMessage maybeRoutingKey
+      result <- catchAmqp $ AMQP.publishMsg channel exchange routingKey rabbitMessage
+      let rid = M.receiveId msg
+      return $ bimap (const rid) (\seqNum -> (fromMaybe (error "Sequence number should be present always.") seqNum, rid)) result
+    confirmFailed = MkPublishResult (M.receiveId <$> messages) []
+    pubFromConfirmResult publishResult confirmResult =
+      let confirmed = acked confirmResult
+          (ok, nok) = partition (\(pid, _) -> member pid confirmed) (rights publishResult)
+       in MkPublishResult (lefts publishResult ++ (snd <$> nok)) (snd <$> ok)
+    acked :: AMQP.ConfirmationResult -> IntSet
+    acked res = case res of
+      AMQP.Complete (ok, _) -> ok
+      AMQP.Partial _ -> error "Impossible."
 
 messageFromRabbitMessage :: (AMQP.Message, AMQP.Envelope) -> M.Message
 messageFromRabbitMessage (rabbitMessage, envelope) =
@@ -67,8 +64,9 @@ rabbitReceive channel queue = do
 
 rabbitAcknowledge :: AMQP.Channel -> [ReceiveId] -> IO ()
 rabbitAcknowledge channel ids = void $ traverse ackMessage ids
-  where ackMessage :: ReceiveId -> IO (Either AMQP.AMQPException ())
-        ackMessage (MkReceiveId i) = catchAmqp $ AMQP.ackMsg channel i False
+  where
+    ackMessage :: ReceiveId -> IO (Either AMQP.AMQPException ())
+    ackMessage (MkReceiveId i) = catchAmqp $ AMQP.ackMsg channel i False
 
 createChannel :: AMQP.ConnectionOpts -> IO (Either T.Text AMQP.Channel)
 createChannel connOpts = runExceptT $ do
@@ -89,4 +87,3 @@ createRabbitMqDestination connOpts exchange routingKey = runExceptT $ do
   mightFail <- liftIO $ catchAmqp $ AMQP.confirmSelect channel False
   except $ left tshow mightFail
   return $ rabbitPublish channel exchange routingKey
-

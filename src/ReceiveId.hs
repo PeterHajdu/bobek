@@ -1,4 +1,4 @@
-module ReceiveId(ReceiveId(..)) where
+module ReceiveId (ReceiveId (..)) where
 
 import Data.Word
 

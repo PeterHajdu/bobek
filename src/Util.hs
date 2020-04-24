@@ -1,4 +1,4 @@
-module Util(tshow) where
+module Util (tshow) where
 
 import Data.Text
 

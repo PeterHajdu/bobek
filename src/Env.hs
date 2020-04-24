@@ -1,24 +1,30 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
-module Env(Env(..), App(..), runMover, SourceFunctions(..)) where
+module Env
+  ( Env (..),
+    App (..),
+    runMover,
+    SourceFunctions (..),
+  )
+where
 
-import Log
-import Mover
-import Source
-import Destination
-import ReceiveId
-import Message
-import Filter
+import Control.Monad.Reader (MonadIO, MonadReader, ask, asks, liftIO, runReaderT)
 import Control.Monad.Trans.Reader (ReaderT)
-import Control.Monad.Reader (MonadReader, liftIO, ask, asks, MonadIO, runReaderT)
+import Destination
+import Filter
+import Log
+import Message
+import Mover
+import ReceiveId
+import Source
 
 data SourceFunctions = MkSourceFunctions (IO (Either NoMessageReason Message)) ([ReceiveId] -> IO ())
 
 data Env = MkEnv
-  { envPublish :: [Message] -> IO PublishResult
-  , sourceFunctions :: SourceFunctions
-  , envFilterAction :: Message -> IO FilterActions
-  , logFunctions :: LogFunctions
+  { envPublish :: [Message] -> IO PublishResult,
+    sourceFunctions :: SourceFunctions,
+    envFilterAction :: Message -> IO FilterActions,
+    logFunctions :: LogFunctions
   }
 
 newtype App a = MkApp {run :: ReaderT Env IO a} deriving (Functor, Applicative, Monad, MonadReader Env, MonadIO)
@@ -30,7 +36,7 @@ instance Destination App where
 
 instance Source App where
   receive = do
-    (MkSourceFunctions recv  _) <- asks sourceFunctions
+    (MkSourceFunctions recv _) <- asks sourceFunctions
     liftIO recv
   acknowledge ids = do
     (MkSourceFunctions _ ack) <- asks sourceFunctions
