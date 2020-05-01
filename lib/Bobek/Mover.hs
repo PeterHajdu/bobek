@@ -64,7 +64,7 @@ publishAndAckMessages msgs = do
       [ " needsPublish: ",
         (T.pack $ show $ length needsPublish),
         " published: ",
-        (T.pack $ show $ length needsPublish),
+        (T.pack $ show $ length publishedIds),
         " needsAck: ",
         (T.pack $ show $ length needsAck),
         " acked: ",
