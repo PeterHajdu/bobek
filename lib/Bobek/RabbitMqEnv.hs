@@ -8,12 +8,13 @@ import Bobek.Source
 import Bobek.Util (tshow)
 import Control.Arrow (left)
 import Control.Exception (try)
-import Control.Monad (join, void)
+import Control.Monad (join)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Trans.Except (except, runExceptT)
 import Data.Bifunctor (bimap)
 import Data.ByteString.Lazy (fromStrict, toStrict)
 import Data.Either (lefts, rights)
+import Data.Foldable (traverse_)
 import Data.IntSet (IntSet, member)
 import Data.List (partition)
 import Data.Maybe (fromMaybe)
@@ -25,7 +26,7 @@ catchAmqp = try
 
 rabbitPublish :: AMQP.Channel -> T.Text -> Maybe T.Text -> [M.Message] -> IO PublishResult
 rabbitPublish channel exchange maybeRoutingKey messages = do
-  publishResult <- traverse (\msg -> publishToRabbitMq msg) messages
+  publishResult <- traverse publishToRabbitMq messages
   confirmResult <- catchAmqp $ AMQP.waitForConfirms channel
   return $ either (const confirmFailed) (pubFromConfirmResult publishResult) confirmResult
   where
@@ -63,7 +64,7 @@ rabbitReceive channel queue = do
   return $ messageFromRabbitMessage <$> msgWithFlattenedError
 
 rabbitAcknowledge :: AMQP.Channel -> [ReceiveId] -> IO ()
-rabbitAcknowledge channel ids = void $ traverse ackMessage ids
+rabbitAcknowledge channel = traverse_ ackMessage
   where
     ackMessage :: ReceiveId -> IO (Either AMQP.AMQPException ())
     ackMessage (MkReceiveId i) = catchAmqp $ AMQP.ackMsg channel i False

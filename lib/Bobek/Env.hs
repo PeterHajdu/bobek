@@ -32,7 +32,7 @@ newtype App a = MkApp {run :: ReaderT Env IO a} deriving newtype (Functor, Appli
 instance Destination App where
   publish msgs = do
     env <- ask
-    liftIO $ (envPublish env) msgs
+    liftIO $ envPublish env msgs
 
 instance Source App where
   receive = do
@@ -45,7 +45,7 @@ instance Source App where
 instance Filter App where
   filterAction msg = do
     env <- ask
-    liftIO $ (envFilterAction env) msg
+    liftIO $ envFilterAction env msg
 
 instance Logger App where
   logError msg = do

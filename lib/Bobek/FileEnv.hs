@@ -45,7 +45,7 @@ createFileSource filePath = do
   return $ bimap tshow (\handle -> MkSourceFunctions (readFromFile handle) (const $ return ())) maybeHandle
 
 serializeMessage :: Message -> BSC.ByteString
-serializeMessage (MkMessage _ routingK msg) = (encodeUtf8 routingK) `BSC.append` (BSC.cons routingKeySeparator msg)
+serializeMessage (MkMessage _ routingK msg) = encodeUtf8 routingK `BSC.append` BSC.cons routingKeySeparator msg
 
 writeToFile :: Handle -> [Message] -> IO PublishResult
 writeToFile handle messages = do
