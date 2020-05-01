@@ -1,4 +1,7 @@
 format:
 	ormolu -m inplace `find src lib test -iname "*.hs"`
 
-.PHONY: format
+lint:
+	hlint -g
+
+.PHONY: format lint
