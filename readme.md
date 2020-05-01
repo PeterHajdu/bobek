@@ -22,3 +22,10 @@ cabal clean
 cabal new-configure --enable-test --enable-coverage
 caba new-test
 ```
+
+# linter
+
+Bobek uses HLint for code linting.  Make sure that it is already installed.
+``` bash
+make lint
+```
