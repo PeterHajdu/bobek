@@ -19,7 +19,7 @@ import Control.Monad.State.Strict (State, execState)
 import Safe (headDef, tailSafe)
 
 runMoveMessages :: Environment -> Environment
-runMoveMessages = execState . run moveMessages
+runMoveMessages = execState (run moveMessages)
 
 data Environment = MkEnv
   { toReceive :: [Either NoMessageReason Message],

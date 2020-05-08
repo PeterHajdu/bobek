@@ -16,10 +16,10 @@ data FilterAction
   deriving stock (Eq, Show)
 
 shouldAck :: FilterActions -> Bool
-shouldAck (MkFilterActions actions) = elem Ack actions
+shouldAck (MkFilterActions actions) = Ack `elem` actions
 
 shouldCopy :: FilterActions -> Bool
-shouldCopy (MkFilterActions actions) = elem Copy actions
+shouldCopy (MkFilterActions actions) = Copy `elem` actions
 
 class Monad m => Filter m where
   filterAction :: Message -> m FilterActions

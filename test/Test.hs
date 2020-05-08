@@ -14,7 +14,7 @@ makeId :: Integral a => a -> ReceiveId
 makeId n = MkReceiveId $ fromIntegral n
 
 makeMessages :: Int -> [Message]
-makeMessages n rid = MkMessage (makeId rid) "routing key" "test message" <$> [1 .. n]
+makeMessages n = (\rid -> MkMessage (makeId rid) "routing key" "test message") <$> [1 .. n]
 
 bothFilter :: Message -> FilterActions
 bothFilter = const $ MkFilterActions [Copy, Ack]
@@ -64,7 +64,7 @@ main = hspec $ do
       let onlyAck = const $ MkFilterActions [Ack]
       let result = runMoveMessages (MkEnv (Right <$> twoBulkMessages) [] [] allSucceeds onlyAck)
       acknowledgedMessages result `shouldBe` twoBulksOfIds
-      null $ published result `shouldBe` True
+      null (published result) `shouldBe` True
   describe "script filters" $ do
     it "should parse ack from response line" $ do
       shouldAck (parseAction "ack") `shouldBe` True
