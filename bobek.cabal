@@ -51,7 +51,6 @@ library
                    Bobek.OptParse
                    Bobek.Env
                    Bobek.Log
-  other-modules:   Bobek.Util
 
 test-suite test
   main-is:             Test.hs

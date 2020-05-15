@@ -5,7 +5,6 @@ import Bobek.Env (SourceFunctions (..))
 import qualified Bobek.Message as M
 import Bobek.ReceiveId
 import Bobek.Source
-import Bobek.Util (tshow)
 import Control.Arrow (left)
 import Control.Exception (try)
 import Control.Monad.Trans.Except (except)
@@ -65,19 +64,19 @@ rabbitAcknowledge channel = traverse_ ackMessage
 createChannel :: AMQP.ConnectionOpts -> IO (Either T.Text AMQP.Channel)
 createChannel connOpts = runExceptT $ do
   maybeConn <- liftIO $ catchAmqp $ AMQP.openConnection'' connOpts
-  conn <- except $ left tshow maybeConn
+  conn <- except $ left show maybeConn
   maybeChan <- liftIO $ catchAmqp $ AMQP.openChannel conn
-  except $ left tshow maybeChan
+  except $ left show maybeChan
 
 createRabbitMqSource :: AMQP.ConnectionOpts -> T.Text -> IO (Either T.Text SourceFunctions)
 createRabbitMqSource connOpts queue = do
   maybeChan <- createChannel connOpts
-  return $ bimap tshow (\chan -> MkSourceFunctions (rabbitReceive chan queue) (rabbitAcknowledge chan)) maybeChan
+  return $ bimap show (\chan -> MkSourceFunctions (rabbitReceive chan queue) (rabbitAcknowledge chan)) maybeChan
 
 createRabbitMqDestination :: AMQP.ConnectionOpts -> T.Text -> Maybe T.Text -> IO (Either T.Text ([M.Message] -> IO PublishResult))
 createRabbitMqDestination connOpts exchange routingKey = runExceptT $ do
   maybeChan <- liftIO $ createChannel connOpts
-  channel <- except $ left tshow maybeChan
+  channel <- except $ left show maybeChan
   mightFail <- liftIO $ catchAmqp $ AMQP.confirmSelect channel False
-  except $ left tshow mightFail
+  except $ left show mightFail
   return $ rabbitPublish channel exchange routingKey
