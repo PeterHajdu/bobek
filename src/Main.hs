@@ -38,6 +38,6 @@ main = do
   opts <- runArgParser
   maybePublisher <- createDestination $ dst opts
   maybeSource <- createSource $ src opts
-  let mfilter = maybe defaultFilter createFilter (messageFilter opts)
+  let msgfilter = maybe defaultFilter createFilter (messageFilter opts)
   let logfunctions = if debug opts then logWithDebug else logOnlyErrors
-  either printError runMover $ MkEnv <$> maybePublisher <*> maybeSource <*> Right mfilter <*> Right logfunctions
+  either printError runMover $ MkEnv <$> maybePublisher <*> maybeSource <*> Right msgfilter <*> Right logfunctions
