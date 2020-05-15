@@ -11,9 +11,6 @@ import Bobek.Log (Logger (..))
 import Bobek.Message
 import Bobek.ReceiveId
 import Bobek.Source
-import Control.Monad (replicateM, unless)
-import Data.Either (partitionEithers)
-import Data.List (foldl')
 import Data.Set ()
 import qualified Data.Set as Set
 import qualified Data.Text as T (concat, pack)
@@ -21,14 +18,15 @@ import qualified Data.Text as T (concat, pack)
 bulkSize :: Int
 bulkSize = 1000
 
-getMessages :: Source m => m (Either NoMessageReason [Message])
+getMessages :: (Logger m, Source m) => m (Maybe [Message])
 getMessages = do
   maybeMessages <- replicateM bulkSize receive
   let (errors, messages) = partitionEithers maybeMessages
+  traverse_ (\msg -> logError $ T.concat ["Failed to read message: ", T.pack . show $ msg]) errors
   return $
     if null messages
-      then Left $ head errors
-      else Right messages
+      then Nothing
+      else Just messages
 
 runFilter :: Filter m => [Message] -> m [(FilterActions, Message)]
 runFilter msgs = do
@@ -76,10 +74,8 @@ moveMessages = do
   logDebug "Reading messages."
   maybeMessages <- getMessages
   case maybeMessages of
-    Left msg -> do
-      logDebug $ T.concat ["Failed to read messages: ", T.pack . show $ msg]
-      return ()
-    Right messages -> do
+    Nothing -> return ()
+    Just messages -> do
       logDebug "Publishing messages."
       publishAndAckMessages messages
       moveMessages

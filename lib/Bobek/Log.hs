@@ -1,10 +1,7 @@
 module Bobek.Log (Logger (..), ioErrorLog, ioDebugLog, LogFunctions (..), logOnlyErrors, logWithDebug) where
 
-import Control.Monad.IO.Class (MonadIO, liftIO)
-import Data.Text
 import qualified Data.Text as T (concat)
 import qualified Data.Text.IO as TIO (hPutStrLn)
-import GHC.IO.Handle.FD (stderr)
 
 class Monad m => Logger m where
   logError :: Text -> m ()

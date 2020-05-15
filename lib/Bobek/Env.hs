@@ -15,8 +15,6 @@ import Bobek.Message
 import Bobek.Mover
 import Bobek.ReceiveId
 import Bobek.Source
-import Control.Monad.Reader (MonadIO, MonadReader, ask, asks, liftIO, runReaderT)
-import Control.Monad.Trans.Reader (ReaderT)
 
 data SourceFunctions = MkSourceFunctions (IO (Either NoMessageReason Message)) ([ReceiveId] -> IO ())
 

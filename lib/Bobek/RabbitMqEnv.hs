@@ -8,16 +8,9 @@ import Bobek.Source
 import Bobek.Util (tshow)
 import Control.Arrow (left)
 import Control.Exception (try)
-import Control.Monad (join)
-import Control.Monad.IO.Class (liftIO)
-import Control.Monad.Trans.Except (except, runExceptT)
-import Data.Bifunctor (bimap)
-import Data.ByteString.Lazy (fromStrict, toStrict)
-import Data.Either (lefts, rights)
-import Data.Foldable (traverse_)
-import Data.IntSet (IntSet, member)
+import Control.Monad.Trans.Except (except)
+import Data.IntSet (member)
 import Data.List (partition)
-import Data.Maybe (fromMaybe)
 import qualified Data.Text as T
 import qualified Network.AMQP as AMQP (AMQPException, Ack (..), Channel, ConfirmationResult (..), ConnectionOpts, DeliveryMode (..), Envelope (..), Message (..), ackMsg, confirmSelect, getMsg, newMsg, openChannel, openConnection'', publishMsg, waitForConfirms)
 

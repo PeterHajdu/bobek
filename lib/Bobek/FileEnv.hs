@@ -8,12 +8,9 @@ import Bobek.Source
 import Bobek.Util (tshow)
 import Control.Arrow (left)
 import Control.Exception (IOException, try)
-import Data.Bifunctor (bimap)
 import qualified Data.ByteString.Char8 as BSC (ByteString, append, cons, hGetLine, hPutStrLn, span)
-import Data.Either (lefts, rights)
 import qualified Data.Text as T
-import Data.Text.Encoding (decodeUtf8, encodeUtf8)
-import System.IO (Handle, IOMode (AppendMode, ReadMode), hFlush, openFile, stdin, stdout)
+import System.IO (hFlush, openFile)
 import System.IO.Error (isEOFError)
 
 routingKeySeparator :: Char

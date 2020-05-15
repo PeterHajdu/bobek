@@ -10,7 +10,6 @@ module Bobek.OptParse
   )
 where
 
-import Data.Text
 import Options.Applicative
 
 newtype Uri = Uri {unUri :: Text} deriving stock (Show)
@@ -58,7 +57,7 @@ queue =
       )
 
 srcParser :: Parser SourceOpts
-srcParser = stdin <|> infile <|> queue
+srcParser = Bobek.OptParse.stdin <|> infile <|> queue
 
 data DestinationOpts
   = Stdout
@@ -108,7 +107,7 @@ exchange =
       )
 
 dstParser :: Parser DestinationOpts
-dstParser = stdout <|> outfile <|> exchange
+dstParser = Bobek.OptParse.stdout <|> outfile <|> exchange
 
 data FilterOpts
   = DontAck
