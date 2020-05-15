@@ -1,4 +1,5 @@
 TODO unit tests for: Env.hs, FileEnv.hs, OptParse.hs, RabbitMqEnv.hs
+TODO create an end-to-end smoke test
 TODO fix script filter protocol (length of message in first line, json?, base64)
 TODO use phantom type parameter to track published state of messages
 TODO extract bulk size to config
