@@ -8,7 +8,6 @@ import Bobek.Source
 import Control.Arrow (left)
 import Control.Exception (IOException, try)
 import qualified Data.ByteString.Char8 as BSC (ByteString, append, cons, hGetLine, hPutStrLn, span)
-import qualified Data.Text as T
 import System.IO (hFlush, openFile)
 import System.IO.Error (isEOFError)
 
@@ -35,7 +34,7 @@ readFromFile handle = do
 createStdinSource :: SourceFunctions
 createStdinSource = MkSourceFunctions (readFromFile stdin) (const $ return ())
 
-createFileSource :: FilePath -> IO (Either T.Text SourceFunctions)
+createFileSource :: FilePath -> IO (Either Text SourceFunctions)
 createFileSource filePath = do
   maybeHandle <- catchIO $ openFile filePath ReadMode
   return $ bimap show (\handle -> MkSourceFunctions (readFromFile handle) (const $ return ())) maybeHandle
@@ -55,7 +54,7 @@ writeToFile handle messages = do
       let rid = receiveId msg
       return $ bimap (const rid) (const rid) result
 
-createFileDestination :: FilePath -> IO (Either T.Text ([Message] -> IO PublishResult))
+createFileDestination :: FilePath -> IO (Either Text ([Message] -> IO PublishResult))
 createFileDestination filePath = do
   maybeHandle <- catchIO $ openFile filePath AppendMode
   return $ bimap show writeToFile maybeHandle
