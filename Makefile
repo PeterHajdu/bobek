@@ -4,4 +4,9 @@ format:
 lint:
 	hlint -g
 
-.PHONY: format lint
+test:
+	cabal clean
+	cabal new-configure --enable-test --enable-coverage
+	cabal new-test
+
+.PHONY: format lint test
