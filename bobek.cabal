@@ -64,6 +64,9 @@ test-suite test
                      , containers
                      , bytestring
                      , text
+                     , relude
+  mixins:              base hiding (Prelude)
+                     , relude (Relude as Prelude)
   other-modules: Bobek.Test.FakeEnvironment
                  Bobek.Test.MoverTest
                  Bobek.Test.ScriptFilterTest

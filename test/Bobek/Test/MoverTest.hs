@@ -6,7 +6,6 @@ import Bobek.Message
 import Bobek.ReceiveId (ReceiveId (..))
 import Bobek.Source ()
 import Bobek.Test.FakeEnvironment
-import Data.Bifoldable (biList)
 import Test.Hspec
 
 makeId :: Integral a => a -> ReceiveId

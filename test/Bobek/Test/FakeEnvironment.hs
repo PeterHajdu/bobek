@@ -14,8 +14,6 @@ import Bobek.Message (Message)
 import Bobek.Mover
 import Bobek.ReceiveId (ReceiveId)
 import Bobek.Source
-import Control.Monad.State (MonadState, get, put)
-import Control.Monad.State.Strict (State, execState)
 import Safe (headDef, tailSafe)
 
 runMoveMessages :: Environment -> Environment
