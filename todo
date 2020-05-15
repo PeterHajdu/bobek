@@ -1,4 +1,3 @@
-TODO make sub probject Bobek
 TODO safe prelude
 TODO fix script filter protocol (length of message in first line, json?, base64)
 TODO use phantom type parameter to track published state of messages

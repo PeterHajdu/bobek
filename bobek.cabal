@@ -63,6 +63,8 @@ test-suite test
                      , bytestring
                      , text
   other-modules: Bobek.Test.FakeEnvironment
+                 Bobek.Test.MoverTest
+                 Bobek.Test.ScriptFilterTest
   hs-source-dirs:      test
   default-language:    Haskell2010
   default-extensions:  DerivingStrategies, OverloadedStrings
