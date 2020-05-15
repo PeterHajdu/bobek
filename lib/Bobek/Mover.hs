@@ -1,5 +1,3 @@
-{-# LANGUAGE ScopedTypeVariables #-}
-
 module Bobek.Mover
   ( moveMessages,
   )
@@ -13,7 +11,7 @@ import Bobek.ReceiveId
 import Bobek.Source
 import Data.Set ()
 import qualified Data.Set as Set
-import qualified Data.Text as T (concat, pack)
+import qualified Data.Text as T (concat)
 
 bulkSize :: Int
 bulkSize = 1000
@@ -22,7 +20,7 @@ getMessages :: (Logger m, Source m) => m (Maybe [Message])
 getMessages = do
   maybeMessages <- replicateM bulkSize receive
   let (errors, messages) = partitionEithers maybeMessages
-  traverse_ (\msg -> logError $ T.concat ["Failed to read message: ", T.pack . show $ msg]) errors
+  traverse_ (logError . reasonText) errors
   return $
     if null messages
       then Nothing
@@ -48,7 +46,8 @@ publishMessages msgs =
     then return Set.empty
     else Set.fromList . succeeded <$> publish msgs
 
-publishAndAckMessages :: forall m. (Logger m, Source m, Destination m, Filter m) => [Message] -> m ()
+--todo: remove forall and extension
+publishAndAckMessages :: (Logger m, Source m, Destination m, Filter m) => [Message] -> m ()
 publishAndAckMessages msgs = do
   actionsWithMessage <- runFilter msgs
   let (needsAck, needsPublish, doesNotNeedPublish) = splitUpMessagesByAction actionsWithMessage
@@ -59,13 +58,13 @@ publishAndAckMessages msgs = do
   logDebug $
     T.concat
       [ " needsPublish: ",
-        T.pack . show . length $ needsPublish,
+        show . length $ needsPublish,
         " published: ",
-        T.pack . show . length $ publishedIds,
+        show . length $ publishedIds,
         " needsAck: ",
-        T.pack . show . length $ needsAck,
+        show . length $ needsAck,
         " acked: ",
-        T.pack . show . length $ toBeAcked
+        show . length $ toBeAcked
       ]
   return ()
 
