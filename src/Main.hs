@@ -20,18 +20,18 @@ type PublisherFunction = Either Text ([M.Message] -> IO PublishResult)
 
 createDestination :: DestinationOpts -> IO PublisherFunction
 createDestination Stdout = pure . Right $ createStdoutDestination
-createDestination (Outfile (Path filePath)) = createFileDestination . unpack $ filePath
+createDestination (Outfile (Path filePath)) = createFileDestination . toString $ filePath
 createDestination (Exchange (Uri uri) ex maybeRk) =
-  createRabbitMqDestination (AMQP.fromURI . unpack $ uri) ex (unKey <$> maybeRk)
+  createRabbitMqDestination (AMQP.fromURI . toString $ uri) ex (unKey <$> maybeRk)
 
 createSource :: SourceOpts -> IO (Either Text SourceFunctions)
 createSource Stdin = pure . Right $ createStdinSource
-createSource (Infile (Path filePath)) = createFileSource $ unpack filePath
-createSource (Queue (Uri uri) queueName) = createRabbitMqSource (AMQP.fromURI . unpack $ uri) queueName
+createSource (Infile (Path filePath)) = createFileSource $ toString filePath
+createSource (Queue (Uri uri) queueName) = createRabbitMqSource (AMQP.fromURI . toString $ uri) queueName
 
 createFilter :: FilterOpts -> (M.Message -> IO FilterActions)
 createFilter DontAck = const . pure $ MkFilterActions [Copy]
-createFilter (FilterScript scriptPath) = scriptFilter $ unpack scriptPath
+createFilter (FilterScript scriptPath) = scriptFilter $ toString scriptPath
 
 main :: IO ()
 main = do

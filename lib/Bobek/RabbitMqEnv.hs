@@ -51,7 +51,7 @@ extractMessageRoutingKey (M.MkMessage _ routingKey body) =
 rabbitReceive :: AMQP.Channel -> Text -> IO (Either NoMessageReason M.Message)
 rabbitReceive channel queue = do
   maybeMessage <- catchAmqp $ AMQP.getMsg channel AMQP.Ack queue
-  let msgWithFlattenedError = join $ bimap (NMRError . show) (maybe (Left NMREmptyQueue) Right) maybeMessage
+  let msgWithFlattenedError = join $ bimap (NMRError . show) (maybeToRight NMREmptyQueue) maybeMessage
   return $ messageFromRabbitMessage <$> msgWithFlattenedError
 
 rabbitAcknowledge :: AMQP.Channel -> [ReceiveId] -> IO ()
