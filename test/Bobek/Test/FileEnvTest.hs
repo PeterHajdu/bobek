@@ -1,7 +1,7 @@
 module Bobek.Test.FileEnvTest (fileEnvSpec) where
 
 import Bobek.Destination (PublishResult (..))
-import Bobek.FileEnv (createFileSource, readFromFile, serializeMessage, writeToFile)
+import Bobek.FileEnv (createFileDestination, createFileSource, readFromFile, serializeMessage, writeToFile)
 import Bobek.Message (Message (..))
 import Bobek.ReceiveId (ReceiveId (..))
 import Bobek.Source (NoMessageReason (..))
@@ -56,3 +56,8 @@ fileEnvSpec =
       $ do
         (Left err) <- createFileSource "hopefullynonexistentfile"
         err `shouldBe` "hopefullynonexistentfile: openFile: does not exist (No such file or directory)"
+    describe "createfiledestination"
+      $ it "should handle io errors during file open"
+      $ do
+        result <- createFileDestination "/hopefullynonexistentfile"
+        isLeft result `shouldBe` True
