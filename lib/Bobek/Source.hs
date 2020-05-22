@@ -6,6 +6,7 @@ import Bobek.ReceiveId (ReceiveId)
 data NoMessageReason
   = NMRError Text
   | NMREmptyQueue
+  deriving stock (Eq, Show)
 
 reasonText :: NoMessageReason -> Text
 reasonText (NMRError msg) = msg
