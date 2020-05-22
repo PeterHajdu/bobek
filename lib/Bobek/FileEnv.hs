@@ -1,4 +1,4 @@
-module Bobek.FileEnv (createStdoutDestination, createStdinSource, createFileSource, createFileDestination) where
+module Bobek.FileEnv (serializeMessage, writeToFile, createStdoutDestination, createStdinSource, createFileSource, createFileDestination) where
 
 import Bobek.Destination
 import Bobek.Env (SourceFunctions (..))
@@ -42,22 +42,25 @@ createFileSource filePath = do
 serializeMessage :: Message -> BSC.ByteString
 serializeMessage (MkMessage _ routingK msg) = encodeUtf8 routingK `BSC.append` BSC.cons routingKeySeparator msg
 
-writeToFile :: Handle -> [Message] -> IO PublishResult
-writeToFile handle messages = do
+writeToFile :: IO () -> (BSC.ByteString -> IO ()) -> [Message] -> IO PublishResult
+writeToFile flush write messages = do
   results <- traverse writeMessage messages
-  hFlush handle
+  _ <- flush
   return $ MkPublishResult (lefts results) (rights results)
   where
     writeMessage :: Message -> IO (Either ReceiveId ReceiveId)
     writeMessage msg = do
-      result <- catchIO $ BSC.hPutStrLn handle (serializeMessage msg)
+      result <- catchIO $ write (serializeMessage msg)
       let rid = receiveId msg
       return $ bimap (const rid) (const rid) result
+
+makeWriter :: Handle -> [Message] -> IO PublishResult
+makeWriter handle = writeToFile (hFlush handle) (BSC.hPutStrLn handle)
 
 createFileDestination :: FilePath -> IO (Either Text ([Message] -> IO PublishResult))
 createFileDestination filePath = do
   maybeHandle <- catchIO $ openFile filePath AppendMode
-  return $ bimap show writeToFile maybeHandle
+  return $ bimap show makeWriter maybeHandle
 
 createStdoutDestination :: [Message] -> IO PublishResult
-createStdoutDestination = writeToFile stdout
+createStdoutDestination = makeWriter stdout
