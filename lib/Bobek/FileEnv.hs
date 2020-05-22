@@ -45,7 +45,7 @@ serializeMessage (MkMessage _ routingK msg) = encodeUtf8 routingK `BSC.append` B
 writeToFile :: IO () -> (BSC.ByteString -> IO ()) -> [Message] -> IO PublishResult
 writeToFile flush write messages = do
   results <- traverse writeMessage messages
-  _ <- flush
+  _ <- catchIO flush
   return $ MkPublishResult (lefts results) (rights results)
   where
     writeMessage :: Message -> IO (Either ReceiveId ReceiveId)
