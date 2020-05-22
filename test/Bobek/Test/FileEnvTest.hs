@@ -1,7 +1,7 @@
 module Bobek.Test.FileEnvTest (fileEnvSpec) where
 
 import Bobek.Destination (PublishResult (..))
-import Bobek.FileEnv (readFromFile, serializeMessage, writeToFile)
+import Bobek.FileEnv (createFileSource, readFromFile, serializeMessage, writeToFile)
 import Bobek.Message (Message (..))
 import Bobek.ReceiveId (ReceiveId (..))
 import Bobek.Source (NoMessageReason (..))
@@ -51,3 +51,8 @@ fileEnvSpec =
       it "handles end of file as an empty queue" $ do
         maybeMessage <- readFromFile (ioError $ IOError Nothing EOF "" "" Nothing Nothing)
         maybeMessage `shouldBe` Left NMREmptyQueue
+    describe "createFileSource"
+      $ it "should handle io errors during file open"
+      $ do
+        (Left err) <- createFileSource "hopefullynonexistentfile"
+        err `shouldBe` "hopefullynonexistentfile: openFile: does not exist (No such file or directory)"
