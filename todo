@@ -1,8 +1,8 @@
 TODO unit tests for: Env.hs, FileEnv.hs, OptParse.hs, RabbitMqEnv.hs
-TODO create an end-to-end smoke test
+TODO no more message on queue should be a debug log
+TODO extract bulk size to config
 TODO fix script filter protocol (length of message in first line, json?, base64)
 TODO use phantom type parameter to track published state of messages
-TODO extract bulk size to config
 TODO add bash completion script install to package build post hooks
 TODO re-add warnings that arg parse generic prevented
 
