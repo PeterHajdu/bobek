@@ -4,8 +4,10 @@ format:
 lint:
 	hlint -g
 
-test:
-	cabal clean
+build:
+	cabal new-build
+
+test: build
 	cabal new-configure --enable-test --enable-coverage
 	cabal new-test
 
@@ -17,4 +19,4 @@ smoke-test:
 	echo "aroutingkey something" | cabal new-run bobek -- --stdin -d amqp://guest:guest@localhost:5672 -e ""
 	cabal new-run bobek -- -s amqp://guest:guest@localhost:5672 -q aroutingkey --stdout | grep something
 
-.PHONY: format lint test smoke-test start-env
+.PHONY: format lint test smoke-test start-env build
