@@ -5,18 +5,19 @@ where
 
 import Bobek.Destination
 import Bobek.Filter
-import Bobek.Log (Logger (..))
+import Bobek.Log
 import Bobek.Message
 import Bobek.ReceiveId
 import Bobek.Source
 import Data.Set ()
 import qualified Data.Set as Set
 import qualified Data.Text as T (concat)
+import Polysemy
 
 bulkSize :: Int
 bulkSize = 1000
 
-getMessages :: (Logger m, Source m) => m (Maybe [Message])
+getMessages :: Members '[Logger, Source] m => Sem m (Maybe [Message])
 getMessages = do
   maybeMessages <- replicateM bulkSize receive
   let (errors, messages) = partitionEithers maybeMessages
@@ -26,9 +27,9 @@ getMessages = do
       then Nothing
       else Just messages
 
-runFilter :: Filter m => [Message] -> m [(FilterActions, Message)]
+runFilter :: Member Filter m => [Message] -> Sem m [(FilterActions, Message)]
 runFilter msgs = do
-  filterActions <- traverse filterAction msgs
+  filterActions <- traverse action msgs
   pure $ zip filterActions msgs
 
 splitUpMessagesByAction :: [(FilterActions, Message)] -> (Set.Set ReceiveId, [Message], Set.Set ReceiveId)
@@ -40,14 +41,14 @@ splitUpMessagesByAction = foldl' splitter (Set.empty, [], Set.empty)
           newNoPub = if shouldCopy actions then oldNoPub else Set.insert (receiveId msg) oldNoPub
        in (newAck, newPub, newNoPub)
 
-publishMessages :: Destination m => [Message] -> m (Set.Set ReceiveId)
+publishMessages :: Member Destination m => [Message] -> Sem m (Set.Set ReceiveId)
 publishMessages msgs =
   if null msgs
     then return Set.empty
     else Set.fromList . succeeded <$> publish msgs
 
 --todo: remove forall and extension
-publishAndAckMessages :: (Logger m, Source m, Destination m, Filter m) => [Message] -> m ()
+publishAndAckMessages :: Members '[Logger, Source, Destination, Filter] m => [Message] -> Sem m ()
 publishAndAckMessages msgs = do
   actionsWithMessage <- runFilter msgs
   let (needsAck, needsPublish, doesNotNeedPublish) = splitUpMessagesByAction actionsWithMessage
@@ -68,7 +69,7 @@ publishAndAckMessages msgs = do
       ]
   return ()
 
-moveMessages :: (Logger m, Source m, Destination m, Filter m) => m ()
+moveMessages :: Members '[Logger, Source, Destination, Filter] m => Sem m ()
 moveMessages = do
   logDebug "Reading messages."
   maybeMessages <- getMessages

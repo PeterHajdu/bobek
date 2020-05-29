@@ -1,8 +1,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 module Bobek.Test.FakeEnvironment
-  ( FakeEnvironment (..),
-    Environment (..),
+  ( Environment (..),
     runMoveMessages,
   )
 where
@@ -14,10 +13,20 @@ import Bobek.Message (Message)
 import Bobek.Mover
 import Bobek.ReceiveId (ReceiveId)
 import Bobek.Source
+import Polysemy
+import Polysemy.State
 import Safe (headDef, tailSafe)
+import Prelude hiding (State, execState, get, put, runState)
 
 runMoveMessages :: Environment -> Environment
-runMoveMessages = execState (run moveMessages)
+runMoveMessages initial =
+  moveMessages
+    & runDestinationPure
+    & runFilterPure
+    & runLoggerPure
+    & runSourcePure
+    & execState initial
+    & run
 
 data Environment = MkEnv
   { toReceive :: [Either NoMessageReason Message],
@@ -27,31 +36,42 @@ data Environment = MkEnv
     filterFun :: Message -> FilterActions
   }
 
-newtype FakeEnvironment a = MkFakeEnvironment {run :: State Environment a} deriving newtype (Functor, Applicative, Monad, MonadState Environment)
-
-instance Source FakeEnvironment where
-  receive = do
+runSourcePure ::
+  Member (State Environment) m =>
+  Sem (Source ': m) a ->
+  Sem m a
+runSourcePure = interpret $ \case
+  Receive -> do
     oldEnv <- get
     let toRec = toReceive oldEnv
     let newEnv = oldEnv {toReceive = tailSafe toRec}
     put newEnv
-    return (headDef (Left NMREmptyQueue) toRec)
-
-  acknowledge ackIds = do
+    pure $ headDef (Left NMREmptyQueue) toRec
+  Acknowledge ackIds -> do
     env@(MkEnv _ acks _ _ _) <- get
     put $ env {acknowledgedMessages = acks ++ [ackIds]}
+    pure ()
 
-instance Destination FakeEnvironment where
-  publish publishedMessages = do
+runDestinationPure ::
+  Member (State Environment) m =>
+  Sem (Destination ': m) a ->
+  Sem m a
+runDestinationPure = interpret $ \case
+  Publish publishedMessages -> do
     env@(MkEnv _ _ pubed pubFun _) <- get
     put $ env {published = pubed ++ [publishedMessages]}
-    return $ pubFun publishedMessages
+    pure $ pubFun publishedMessages
 
-instance Filter FakeEnvironment where
-  filterAction message = do
+runFilterPure ::
+  Member (State Environment) m =>
+  Sem (Filter ': m) a ->
+  Sem m a
+runFilterPure = interpret $ \case
+  Action message -> do
     (MkEnv _ _ _ _ f) <- get
-    return (f message)
+    pure (f message)
 
-instance Logger FakeEnvironment where
-  logError = const $ return ()
-  logDebug = logError
+runLoggerPure :: Sem (Logger ': m) a -> Sem m a
+runLoggerPure = interpret $ \case
+  LogError _ -> pure ()
+  LogDebug _ -> pure ()

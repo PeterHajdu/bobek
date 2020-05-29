@@ -1,6 +1,18 @@
-module Bobek.Filter (Filter (..), FilterAction (..), FilterActions (..), shouldAck, shouldCopy) where
+{-# LANGUAGE TemplateHaskell #-}
+
+module Bobek.Filter
+  ( Filter (..),
+    action,
+    FilterAction (..),
+    FilterActions (..),
+    shouldAck,
+    shouldCopy,
+    noopInterpreter,
+  )
+where
 
 import Bobek.Message
+import Polysemy
 
 newtype FilterActions = MkFilterActions [FilterAction]
 
@@ -21,5 +33,14 @@ shouldAck (MkFilterActions actions) = Ack `elem` actions
 shouldCopy :: FilterActions -> Bool
 shouldCopy (MkFilterActions actions) = Copy `elem` actions
 
-class Monad m => Filter m where
-  filterAction :: Message -> m FilterActions
+data Filter m a where
+  Action :: Message -> Filter m FilterActions
+
+makeSem ''Filter
+
+noopInterpreter ::
+  Members '[(Embed IO)] m =>
+  Sem (Filter ': m) a ->
+  Sem m a
+noopInterpreter = interpret $ \case
+  Action _ -> pure mempty

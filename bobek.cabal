@@ -22,12 +22,25 @@ library
                      , containers
                      , optparse-applicative
                      , relude
+                     , polysemy
+                     , polysemy-plugin
   mixins:              base hiding (Prelude)
                      , relude (Relude as Prelude)
   hs-source-dirs:      lib
   default-language:    Haskell2010
-  default-extensions:  DerivingStrategies, OverloadedStrings
-  ghc-options:         -Weverything
+  default-extensions:  DerivingStrategies
+                     , OverloadedStrings
+                     , DataKinds
+                     , GADTs
+                     , FlexibleContexts
+                     , LambdaCase
+                     , PolyKinds
+                     , RankNTypes
+                     , ScopedTypeVariables
+                     , TypeApplications
+                     , TypeOperators
+                     , TypeFamilies
+  ghc-options:
                        -Wno-missing-exported-signatures
                        -Wno-implicit-prelude
                        -Wno-missing-import-lists
@@ -39,6 +52,7 @@ library
                        -Wno-monomorphism-restriction
                        -Wno-partial-fields
                        -Werror
+                       -fplugin=Polysemy.Plugin
   exposed-modules: Bobek.ScriptFilter
                    Bobek.Message
                    Bobek.ReceiveId
@@ -49,7 +63,6 @@ library
                    Bobek.Destination
                    Bobek.Mover
                    Bobek.OptParse
-                   Bobek.Env
                    Bobek.Log
 
 test-suite test
@@ -67,6 +80,7 @@ test-suite test
                      , relude
                      , amqp
                      , safe-exceptions
+                     , polysemy
   mixins:              base hiding (Prelude)
                      , relude (Relude as Prelude)
   other-modules: Bobek.Test.FakeEnvironment
@@ -76,8 +90,19 @@ test-suite test
                  Bobek.Test.RabbitMqEnvTest
   hs-source-dirs:      test
   default-language:    Haskell2010
-  default-extensions:  DerivingStrategies, OverloadedStrings
-  ghc-options:         -Weverything
+  default-extensions:  DerivingStrategies
+                     , OverloadedStrings
+                     , DataKinds
+                     , FlexibleContexts
+                     , GADTs
+                     , LambdaCase
+                     , PolyKinds
+                     , RankNTypes
+                     , ScopedTypeVariables
+                     , TypeApplications
+                     , TypeOperators
+                     , TypeFamilies
+  ghc-options:
                        -Wno-missing-exported-signatures
                        -Wno-implicit-prelude
                        -Wno-missing-import-lists
@@ -88,7 +113,6 @@ test-suite test
                        -Wno-missing-local-signatures
                        -Wno-monomorphism-restriction
                        -Werror
-
 executable bobek
   main-is:             Main.hs
   build-depends:       base >=4.10
@@ -97,12 +121,24 @@ executable bobek
                      , text
                      , optparse-applicative
                      , relude
+                     , polysemy
+                     , polysemy-plugin
   mixins:              base hiding (Prelude)
                      , relude (Relude as Prelude)
   hs-source-dirs:      src
   default-language:    Haskell2010
   default-extensions:  OverloadedStrings
-  ghc-options:         -Weverything
+                     , DataKinds
+                     , FlexibleContexts
+                     , GADTs
+                     , LambdaCase
+                     , PolyKinds
+                     , RankNTypes
+                     , ScopedTypeVariables
+                     , TypeApplications
+                     , TypeOperators
+                     , TypeFamilies
+  ghc-options:
                        -Wno-missing-exported-signatures
                        -Wno-implicit-prelude
                        -Wno-missing-import-lists
@@ -113,3 +149,4 @@ executable bobek
                        -Wno-missing-local-signatures
                        -Wno-monomorphism-restriction
                        -Werror
+                       -fplugin=Polysemy.Plugin

@@ -1,43 +1,66 @@
 module Main (main) where
 
 import Bobek.Destination
-import Bobek.Env
 import Bobek.FileEnv
-import Bobek.Filter (FilterAction (..), FilterActions (..))
+import Bobek.Filter
 import Bobek.Log
 import qualified Bobek.Message as M
+import Bobek.Mover
 import Bobek.OptParse
 import Bobek.RabbitMqEnv
 import Bobek.ScriptFilter
+import Bobek.Source
 import Data.Semigroup ()
 import Data.Text
 import qualified Network.AMQP as AMQP (fromURI)
+import Polysemy
+import Polysemy.Error
+import qualified Polysemy.Reader as P
 
-printError :: Text -> IO ()
-printError errorMsg = ioErrorLog $ "Unable to initialize rabbitmq environment: " `append` errorMsg
+type Interpreter layer =
+  forall a m.
+  Members '[Embed IO, Error Text] m =>
+  Sem (layer ': m) a ->
+  Sem m a
 
-type PublisherFunction = Either Text ([M.Message] -> IO PublishResult)
+destination :: DestinationOpts -> Interpreter Destination
+destination = \case
+  Stdout -> stdoutAsDestination
+  (Outfile (Path filePath)) -> P.runReader (toString filePath) . fileAsDestination
+  (Exchange (Uri uri) ex maybeRk) -> stdoutAsDestination -- TODO do rabbit
+    --destination (AMQP.fromURI . toString $ uri) ex (unKey <$> maybeRk)
 
-createDestination :: DestinationOpts -> IO PublisherFunction
-createDestination Stdout = pure . Right $ createStdoutDestination
-createDestination (Outfile (Path filePath)) = createFileDestination . toString $ filePath
-createDestination (Exchange (Uri uri) ex maybeRk) =
-  createRabbitMqDestination (AMQP.fromURI . toString $ uri) ex (unKey <$> maybeRk)
+source :: SourceOpts -> Interpreter Source
+source = \case
+  Stdin -> stdinAsSource
+  (Infile (Path filePath)) -> P.runReader (toString filePath) . fileAsSource
+  (Queue (Uri uri) queueName) -> stdinAsSource -- TODO do rabbit
+    -- createRabbitMqSource (AMQP.fromURI . toString $ uri) queueName
 
-createSource :: SourceOpts -> IO (Either Text SourceFunctions)
-createSource Stdin = pure . Right $ createStdinSource
-createSource (Infile (Path filePath)) = createFileSource $ toString filePath
-createSource (Queue (Uri uri) queueName) = createRabbitMqSource (AMQP.fromURI . toString $ uri) queueName
+filter' :: FilterOpts -> Interpreter Filter
+filter' _ = noopInterpreter -- TODO make normal filter things
 
-createFilter :: FilterOpts -> (M.Message -> IO FilterActions)
-createFilter DontAck = const . pure $ MkFilterActions [Copy]
-createFilter (FilterScript scriptPath) = scriptFilter $ toString scriptPath
+-- createFilter :: FilterOpts -> (M.Message -> IO FilterActions)
+-- createFilter DontAck = const . pure $ MkFilterActions [Copy]
+-- createFilter (FilterScript scriptPath) = scriptFilter $ toString scriptPath
 
 main :: IO ()
 main = do
   opts <- runArgParser
-  maybePublisher <- createDestination $ dst opts
-  maybeSource <- createSource $ src opts
-  let msgfilter = maybe defaultFilter createFilter (messageFilter opts)
-  let logfunctions = if debug opts then logWithDebug else logOnlyErrors
-  either printError runMover $ MkEnv <$> maybePublisher <*> maybeSource <*> Right msgfilter <*> Right logfunctions
+  let dstInterpreter = destination $ dst opts
+      srcInterpreter = source $ src opts
+      logInterpreter = if debug opts then logWithDebug else logOnlyErrors
+      filterInterpreter = maybe noopInterpreter filter' (messageFilter opts)
+
+  result <-
+    moveMessages
+      & dstInterpreter
+      & srcInterpreter
+      & logInterpreter
+      & filterInterpreter
+      & runError
+      & runM
+
+  case result of
+    Left e -> print e
+    _ -> pure ()

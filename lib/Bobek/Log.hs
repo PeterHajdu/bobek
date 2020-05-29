@@ -1,28 +1,40 @@
-module Bobek.Log (Logger (..), ioErrorLog, ioDebugLog, LogFunctions (..), logOnlyErrors, logWithDebug) where
+{-# LANGUAGE TemplateHaskell #-}
 
-import qualified Data.Text as T (concat)
+module Bobek.Log
+  ( Logger (..),
+    logError,
+    logDebug,
+    logOnlyErrors,
+    logWithDebug,
+  )
+where
+
+import qualified Data.Text as T
 import qualified Data.Text.IO as TIO (hPutStrLn)
+import Polysemy
+import Polysemy.Error
 
-class Monad m => Logger m where
-  logError :: Text -> m ()
-  logDebug :: Text -> m ()
+data Logger m a where
+  LogError :: Text -> Logger m ()
+  LogDebug :: Text -> Logger m ()
 
-data LogFunctions = MkLogFunctions
-  { errorFunction :: Text -> IO (),
-    debugFunction :: Text -> IO ()
-  }
+makeSem ''Logger
 
-logOnlyErrors :: LogFunctions
-logOnlyErrors = MkLogFunctions ioErrorLog (const $ return ())
+ioLog :: Text -> Text -> IO ()
+ioLog prefix msg = TIO.hPutStrLn stderr $ T.concat [prefix, msg]
 
-logWithDebug :: LogFunctions
-logWithDebug = MkLogFunctions ioErrorLog ioDebugLog
+logOnlyErrors ::
+  Members '[(Embed IO)] m =>
+  Sem (Logger ': m) a ->
+  Sem m a
+logOnlyErrors = interpret $ \case
+  LogError msg -> embed $ ioLog "ERROR" msg
+  LogDebug msg -> pure ()
 
-ioErrorLog :: MonadIO m => Text -> m ()
-ioErrorLog = ioLog "ERROR "
-
-ioDebugLog :: MonadIO m => Text -> m ()
-ioDebugLog = ioLog "DEBUG "
-
-ioLog :: MonadIO m => Text -> Text -> m ()
-ioLog prefix msg = liftIO $ TIO.hPutStrLn stderr $ T.concat [prefix, msg]
+logWithDebug ::
+  Members '[(Embed IO)] m =>
+  Sem (Logger ': m) a ->
+  Sem m a
+logWithDebug = interpret $ \case
+  LogError msg -> embed $ ioLog "ERROR" msg
+  LogDebug msg -> embed $ ioLog "DEBUG" msg

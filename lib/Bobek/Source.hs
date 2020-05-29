@@ -1,7 +1,17 @@
-module Bobek.Source (reasonText, Source (..), NoMessageReason (..)) where
+{-# LANGUAGE TemplateHaskell #-}
+
+module Bobek.Source
+  ( reasonText,
+    Source (..),
+    NoMessageReason (..),
+    receive,
+    acknowledge,
+  )
+where
 
 import Bobek.Message (Message)
 import Bobek.ReceiveId (ReceiveId)
+import Polysemy
 
 data NoMessageReason
   = NMRError Text
@@ -12,6 +22,8 @@ reasonText :: NoMessageReason -> Text
 reasonText (NMRError msg) = msg
 reasonText NMREmptyQueue = "Empty queue."
 
-class Monad m => Source m where
-  receive :: m (Either NoMessageReason Message)
-  acknowledge :: [ReceiveId] -> m ()
+data Source m a where
+  Receive :: Source m (Either NoMessageReason Message)
+  Acknowledge :: [ReceiveId] -> Source m ()
+
+makeSem ''Source

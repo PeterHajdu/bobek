@@ -1,7 +1,6 @@
-module Bobek.RabbitMqEnv (rabbitAcknowledge, createRabbitMqSource, createRabbitMqDestination) where
+module Bobek.RabbitMqEnv (rabbitAcknowledge, createRabbitMqDestination) where
 
 import Bobek.Destination
-import Bobek.Env (SourceFunctions (..))
 import qualified Bobek.Message as M
 import Bobek.ReceiveId
 import Bobek.Source
@@ -70,11 +69,6 @@ createChannel connOpts = runExceptT $ do
   maybeChan <- liftIO $ catchAmqp $ AMQP.openChannel conn
   except $ left show maybeChan
 
-createRabbitMqSource :: AMQP.ConnectionOpts -> Text -> IO (Either Text SourceFunctions)
-createRabbitMqSource connOpts queue = do
-  maybeChan <- createChannel connOpts
-  return $ bimap show (\chan -> MkSourceFunctions (rabbitReceive chan queue) (createAcknowledge chan)) maybeChan
-
 createRabbitMqDestination :: AMQP.ConnectionOpts -> Text -> Maybe Text -> IO (Either Text ([M.Message] -> IO PublishResult))
 createRabbitMqDestination connOpts exchange routingKey = runExceptT $ do
   maybeChan <- liftIO $ createChannel connOpts
@@ -82,3 +76,15 @@ createRabbitMqDestination connOpts exchange routingKey = runExceptT $ do
   mightFail <- liftIO $ catchAmqp $ AMQP.confirmSelect channel False
   except $ left show mightFail
   return $ rabbitPublish channel exchange routingKey
+
+-- createRabbitMqSource :: AMQP.ConnectionOpts -> Text -> IO (Either Text SourceFunctions)
+-- createRabbitMqSource connOpts queue = do
+--   maybeChan <- createChannel connOpts
+--   return $ bimap show (\chan -> MkSourceFunctions (rabbitReceive chan queue) (createAcknowledge chan)) maybeChan
+
+-- destinationToRabbitMq :: Member (Embed IO) m => Sem (Destination ': m) a -> Sem m a
+-- destinationToRabbitMq = interpret $ \case
+--   ReadFile file -> embed $
+--     doesFileExist file >>= \case
+--       False -> pure Nothing
+--       True -> Just <$> IO.readFile file

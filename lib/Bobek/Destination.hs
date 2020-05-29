@@ -1,11 +1,22 @@
-module Bobek.Destination (DestinationError, Destination (..), PublishResult (..)) where
+{-# LANGUAGE TemplateHaskell #-}
+
+module Bobek.Destination
+  ( DestinationError,
+    Destination (..),
+    PublishResult (..),
+    publish,
+  )
+where
 
 import Bobek.Message (Message)
 import Bobek.ReceiveId (ReceiveId)
+import Polysemy
 
 newtype DestinationError = MkDestinationError String deriving stock (Show)
 
 data PublishResult = MkPublishResult {failed :: [ReceiveId], succeeded :: [ReceiveId]}
 
-class Monad m => Destination m where
-  publish :: [Message] -> m PublishResult
+data Destination m a where
+  Publish :: [Message] -> Destination m PublishResult
+
+makeSem ''Destination

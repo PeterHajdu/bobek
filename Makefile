@@ -1,5 +1,5 @@
 format:
-	ormolu -m inplace `find src lib test -iname "*.hs"`
+	ormolu -m inplace `find src lib test -iname "*.hs"` --ghc-opt -XTypeApplications
 
 lint:
 	hlint -g
