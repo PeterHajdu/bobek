@@ -1,4 +1,4 @@
-TODO unit tests for: Env.hs, FileEnv.hs, OptParse.hs, RabbitMqEnv.hs
+TODO unit tests for: Env.hs, OptParse.hs
 TODO no more message on queue should be a debug log
 TODO extract bulk size to config
 TODO fix script filter protocol (length of message in first line, json?, base64)

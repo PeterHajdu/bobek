@@ -1,4 +1,4 @@
-module Bobek.RabbitMqEnv (createRabbitMqSource, createRabbitMqDestination) where
+module Bobek.RabbitMqEnv (rabbitAcknowledge, createRabbitMqSource, createRabbitMqDestination) where
 
 import Bobek.Destination
 import Bobek.Env (SourceFunctions (..))
@@ -54,11 +54,14 @@ rabbitReceive channel queue = do
   let msgWithFlattenedError = join $ bimap (NMRError . show) (maybeToRight NMREmptyQueue) maybeMessage
   return $ messageFromRabbitMessage <$> msgWithFlattenedError
 
-rabbitAcknowledge :: AMQP.Channel -> [ReceiveId] -> IO ()
-rabbitAcknowledge channel = traverse_ ackMessage
+rabbitAcknowledge :: (Word64 -> Bool -> IO ()) -> [ReceiveId] -> IO ()
+rabbitAcknowledge ack = traverse_ ackMessage
   where
     ackMessage :: ReceiveId -> IO (Either AMQP.AMQPException ())
-    ackMessage (MkReceiveId i) = catchAmqp $ AMQP.ackMsg channel i False
+    ackMessage (MkReceiveId i) = catchAmqp $ ack i False
+
+createAcknowledge :: AMQP.Channel -> [ReceiveId] -> IO ()
+createAcknowledge channel = rabbitAcknowledge $ AMQP.ackMsg channel
 
 createChannel :: AMQP.ConnectionOpts -> IO (Either Text AMQP.Channel)
 createChannel connOpts = runExceptT $ do
@@ -70,7 +73,7 @@ createChannel connOpts = runExceptT $ do
 createRabbitMqSource :: AMQP.ConnectionOpts -> Text -> IO (Either Text SourceFunctions)
 createRabbitMqSource connOpts queue = do
   maybeChan <- createChannel connOpts
-  return $ bimap show (\chan -> MkSourceFunctions (rabbitReceive chan queue) (rabbitAcknowledge chan)) maybeChan
+  return $ bimap show (\chan -> MkSourceFunctions (rabbitReceive chan queue) (createAcknowledge chan)) maybeChan
 
 createRabbitMqDestination :: AMQP.ConnectionOpts -> Text -> Maybe Text -> IO (Either Text ([M.Message] -> IO PublishResult))
 createRabbitMqDestination connOpts exchange routingKey = runExceptT $ do

@@ -65,12 +65,15 @@ test-suite test
                      , bytestring
                      , text
                      , relude
+                     , amqp
+                     , safe-exceptions
   mixins:              base hiding (Prelude)
                      , relude (Relude as Prelude)
   other-modules: Bobek.Test.FakeEnvironment
                  Bobek.Test.MoverTest
                  Bobek.Test.ScriptFilterTest
                  Bobek.Test.FileEnvTest
+                 Bobek.Test.RabbitMqEnvTest
   hs-source-dirs:      test
   default-language:    Haskell2010
   default-extensions:  DerivingStrategies, OverloadedStrings
