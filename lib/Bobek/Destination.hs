@@ -14,7 +14,7 @@ import Polysemy
 
 newtype DestinationError = MkDestinationError String deriving stock (Show)
 
-data PublishResult = MkPublishResult {failed :: [ReceiveId], succeeded :: [ReceiveId]}
+data PublishResult = MkPublishResult {failed :: [ReceiveId], succeeded :: [ReceiveId]} deriving (Show, Eq)
 
 data Destination m a where
   Publish :: [Message] -> Destination m PublishResult
