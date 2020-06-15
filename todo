@@ -1,3 +1,4 @@
+TODO define exhcange per message
 TODO unit tests for: Env.hs, OptParse.hs
 TODO no more message on queue should be a debug log
 TODO extract bulk size to config
