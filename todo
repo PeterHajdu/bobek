@@ -1,7 +1,7 @@
+TODO extract bulk size to config
 TODO define exhcange per message
 TODO unit tests for: Env.hs, OptParse.hs
 TODO no more message on queue should be a debug log
-TODO extract bulk size to config
 TODO fix script filter protocol (length of message in first line, json?, base64)
 TODO use phantom type parameter to track published state of messages
 TODO add bash completion script install to package build post hooks
