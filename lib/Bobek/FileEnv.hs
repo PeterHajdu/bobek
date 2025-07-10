@@ -58,7 +58,7 @@ writeToFile flush write messages = do
       return $ bimap (const rid) (const rid) result
 
 makeWriter :: Handle -> [Message] -> IO PublishResult
-makeWriter handle = writeToFile (hFlush handle) (BSC.hPutStrLn handle)
+makeWriter handle = writeToFile (System.IO.hFlush handle) (BSC.hPutStrLn handle)
 
 createFileDestination :: FilePath -> IO (Either Text ([Message] -> IO PublishResult))
 createFileDestination filePath = do

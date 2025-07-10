@@ -10,7 +10,8 @@ import Control.Exception (try)
 import Control.Monad.Trans.Except (except)
 import Data.IntSet (member)
 import Data.List (partition)
-import qualified Network.AMQP as AMQP (AMQPException, Ack (..), Channel, ConfirmationResult (..), ConnectionOpts, DeliveryMode (..), Envelope (..), Message (..), ackMsg, confirmSelect, getMsg, newMsg, openChannel, openConnection'', publishMsg, waitForConfirms)
+import Data.Text (pack)
+import qualified Network.AMQP as AMQP (fromURI, AMQPException, Ack (..), Channel, ConfirmationResult (..), ConnectionOpts, DeliveryMode (..), Envelope (..), Message (..), ackMsg, confirmSelect, getMsg, newMsg, openChannel, openConnection'', publishMsg, waitForConfirms)
 
 catchAmqp :: IO a -> IO (Either AMQP.AMQPException a)
 catchAmqp = try
@@ -70,13 +71,15 @@ createChannel connOpts = runExceptT $ do
   maybeChan <- liftIO $ catchAmqp $ AMQP.openChannel conn
   except $ left show maybeChan
 
-createRabbitMqSource :: AMQP.ConnectionOpts -> Text -> IO (Either Text SourceFunctions)
-createRabbitMqSource connOpts queue = do
-  maybeChan <- createChannel connOpts
-  return $ bimap show (\chan -> MkSourceFunctions (rabbitReceive chan queue) (createAcknowledge chan)) maybeChan
+createRabbitMqSource :: String -> Text -> IO (Either Text SourceFunctions)
+createRabbitMqSource uri queue = runExceptT $ do
+  connOpts <- except $ left pack $ AMQP.fromURI uri
+  chan <- ExceptT $ createChannel connOpts
+  return $ MkSourceFunctions (rabbitReceive chan queue) (createAcknowledge chan)
 
-createRabbitMqDestination :: AMQP.ConnectionOpts -> Text -> Maybe Text -> IO (Either Text ([M.Message] -> IO PublishResult))
-createRabbitMqDestination connOpts exchange routingKey = runExceptT $ do
+createRabbitMqDestination :: String -> Text -> Maybe Text -> IO (Either Text ([M.Message] -> IO PublishResult))
+createRabbitMqDestination uri exchange routingKey = runExceptT $ do
+  connOpts <- except $ left pack $ AMQP.fromURI uri
   maybeChan <- liftIO $ createChannel connOpts
   channel <- except $ left show maybeChan
   mightFail <- liftIO $ catchAmqp $ AMQP.confirmSelect channel False

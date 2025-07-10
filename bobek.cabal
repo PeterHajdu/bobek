@@ -38,6 +38,10 @@ library
                        -Wno-missing-local-signatures
                        -Wno-monomorphism-restriction
                        -Wno-partial-fields
+                       -Wno-unused-packages
+                       -Wno-missing-safe-haskell-mode
+                       -Wno-missing-kind-signatures
+                       -Wno-prepositive-qualified-module
                        -Werror
   exposed-modules: Bobek.ScriptFilter
                    Bobek.Message
@@ -87,6 +91,10 @@ test-suite test
                        -Wno-safe
                        -Wno-missing-local-signatures
                        -Wno-monomorphism-restriction
+                       -Wno-unused-packages
+                       -Wno-missing-safe-haskell-mode
+                       -Wno-missing-kind-signatures
+                       -Wno-prepositive-qualified-module
                        -Werror
 
 executable bobek
@@ -112,4 +120,8 @@ executable bobek
                        -Wno-safe
                        -Wno-missing-local-signatures
                        -Wno-monomorphism-restriction
+                       -Wno-unused-packages
+                       -Wno-missing-safe-haskell-mode
+                       -Wno-missing-kind-signatures
+                       -Wno-prepositive-qualified-module
                        -Werror

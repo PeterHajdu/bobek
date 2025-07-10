@@ -29,7 +29,7 @@ scriptFilter :: FilePath -> Message -> IO FilterActions
 scriptFilter path msg = do
   (Just inHandle, Just outHandle, _, _) <- createProcess (proc path []) {std_in = CreatePipe, std_out = CreatePipe}
   _ <- BSC.hPutStrLn inHandle (serializeMessage msg)
-  hFlush inHandle
+  System.IO.hFlush inHandle
   line <- BSC.hGetLine outHandle
   return $ parseAction line
 
