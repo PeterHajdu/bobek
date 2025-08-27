@@ -19,8 +19,8 @@ bulkSize = 1000
 getMessages :: (Logger m, Source m) => m (Maybe [Message])
 getMessages = do
   maybeMessages <- replicateM bulkSize receive
-  let (errors, messages) = partitionEithers maybeMessages
-  traverse_ (logError . reasonText) errors
+  let (messageNotReceivedReasons, messages) = partitionEithers maybeMessages
+  traverse_ (logError . reasonText) (filter (\r -> r /= NMREmptyQueue) messageNotReceivedReasons)
   return $
     if null messages
       then Nothing
