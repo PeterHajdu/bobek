@@ -24,7 +24,8 @@ data Environment = MkEnv
     acknowledgedMessages :: [[ReceiveId]],
     published :: [[Message]],
     publishFun :: [Message] -> PublishResult,
-    filterFun :: Message -> FilterActions
+    filterFun :: Message -> FilterActions,
+    logged :: [Text]
   }
 
 newtype FakeEnvironment a = MkFakeEnvironment {run :: State Environment a} deriving newtype (Functor, Applicative, Monad, MonadState Environment)
@@ -38,20 +39,22 @@ instance Source FakeEnvironment where
     return (headDef (Left NMREmptyQueue) toRec)
 
   acknowledge ackIds = do
-    env@(MkEnv _ acks _ _ _) <- get
+    env@(MkEnv _ acks _ _ _ _) <- get
     put $ env {acknowledgedMessages = acks ++ [ackIds]}
 
 instance Destination FakeEnvironment where
   publish publishedMessages = do
-    env@(MkEnv _ _ pubed pubFun _) <- get
+    env@(MkEnv _ _ pubed pubFun _ _) <- get
     put $ env {published = pubed ++ [publishedMessages]}
     return $ pubFun publishedMessages
 
 instance Filter FakeEnvironment where
   filterAction message = do
-    (MkEnv _ _ _ _ f) <- get
+    (MkEnv _ _ _ _ f _) <- get
     return (f message)
 
 instance Logger FakeEnvironment where
-  logError = const $ return ()
+  logError msg = do
+    env@(MkEnv _ _ _ _ _ loggedMessages) <- get
+    put $ env { logged = loggedMessages ++ [msg]}
   logDebug = logError

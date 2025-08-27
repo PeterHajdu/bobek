@@ -4,7 +4,7 @@ import Bobek.Destination
 import Bobek.Filter
 import Bobek.Message
 import Bobek.ReceiveId (ReceiveId (..))
-import Bobek.Source ()
+import Bobek.Source
 import Bobek.Test.FakeEnvironment
 import Test.Hspec
 
@@ -41,24 +41,27 @@ onePageMessages = makeMessages 1000
 moverSpec :: Spec
 moverSpec = describe "moveMessages" $ do
   it "should publish messages in one bulk if the number of messages is less than the bulk size" $ do
-    let result = runMoveMessages (MkEnv (Right <$> onePageMessages) [] [] allSucceeds bothFilter)
+    let result = runMoveMessages (MkEnv (Right <$> onePageMessages) [] [] allSucceeds bothFilter [])
     published result `shouldBe` [onePageMessages]
   it "should publish messages in more bulks if the number of messages is greater than the bulk size" $ do
-    let result = runMoveMessages (MkEnv (Right <$> twoBulkMessages) [] [] allSucceeds bothFilter)
+    let result = runMoveMessages (MkEnv (Right <$> twoBulkMessages) [] [] allSucceeds bothFilter [])
     published result `shouldBe` twoBulks
   it "should acknowledge published messages" $ do
-    let result = runMoveMessages (MkEnv (Right <$> twoBulkMessages) [] [] allSucceeds bothFilter)
+    let result = runMoveMessages (MkEnv (Right <$> twoBulkMessages) [] [] allSucceeds bothFilter [])
     acknowledgedMessages result `shouldBe` twoBulksOfIds
   it "should acknowledge messages only if publishing succeeds" $ do
     let toBeAcked = succeeded $ someSucceeds onePageMessages
-    let result = runMoveMessages (MkEnv (Right <$> onePageMessages) [] [] someSucceeds bothFilter)
+    let result = runMoveMessages (MkEnv (Right <$> onePageMessages) [] [] someSucceeds bothFilter [])
     acknowledgedMessages result `shouldBe` [toBeAcked]
   it "should acknowledge messages only if the filter asks for it" $ do
     let onlyCopy = const $ MkFilterActions [Copy]
-    let result = runMoveMessages (MkEnv (Right <$> onePageMessages) [] [] allSucceeds onlyCopy)
+    let result = runMoveMessages (MkEnv (Right <$> onePageMessages) [] [] allSucceeds onlyCopy [])
     acknowledgedMessages result `shouldBe` []
   it "should copy the messages only if the filter asks for it" $ do
     let onlyAck = const $ MkFilterActions [Ack]
-    let result = runMoveMessages (MkEnv (Right <$> twoBulkMessages) [] [] allSucceeds onlyAck)
+    let result = runMoveMessages (MkEnv (Right <$> twoBulkMessages) [] [] allSucceeds onlyAck [])
     acknowledgedMessages result `shouldBe` twoBulksOfIds
     null (published result) `shouldBe` True
+  it "should log out only errors from source" $ do
+    let result = runMoveMessages (MkEnv (Left <$> [NMRError "1", NMREmptyQueue, NMRError "2"]) [] [] allSucceeds bothFilter [])
+    logged result `shouldBe` ["Reading messages.", "1", "2"]
