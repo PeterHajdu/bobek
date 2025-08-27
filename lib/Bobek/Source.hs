@@ -12,6 +12,6 @@ reasonText :: NoMessageReason -> Text
 reasonText (NMRError msg) = msg
 reasonText NMREmptyQueue = "Empty queue."
 
-class Monad m => Source m where
+class (Monad m) => Source m where
   receive :: m (Either NoMessageReason Message)
   acknowledge :: [ReceiveId] -> m ()

@@ -22,14 +22,14 @@ anAmqpException = AllChannelsAllocatedException 0
 
 rabbitMqEnvSpec :: Spec
 rabbitMqEnvSpec =
-  describe "rabbitmqenv"
-    $ describe "rabbitAcknowledge"
-    $ do
-      it "calls ack with every receive id" $ do
-        calls <- happyCase someReceiveIds
-        (fst <$> calls) `shouldBe` someReceiveIds
-      it "calls ack with multiple flag set to false" $ do
-        calls <- happyCase someReceiveIds
-        (snd <$> calls) `shouldBe` [False, False]
-      it "handles amqp exceptions" $
-        rabbitAcknowledge (\_ _ -> impureThrow anAmqpException) someReceiveIds
+  describe "rabbitmqenv" $
+    describe "rabbitAcknowledge" $
+      do
+        it "calls ack with every receive id" $ do
+          calls <- happyCase someReceiveIds
+          (fst <$> calls) `shouldBe` someReceiveIds
+        it "calls ack with multiple flag set to false" $ do
+          calls <- happyCase someReceiveIds
+          (snd <$> calls) `shouldBe` [False, False]
+        it "handles amqp exceptions" $
+          rabbitAcknowledge (\_ _ -> impureThrow anAmqpException) someReceiveIds

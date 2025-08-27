@@ -8,7 +8,7 @@ import Bobek.Source
 import Bobek.Test.FakeEnvironment
 import Test.Hspec
 
-makeId :: Integral a => a -> ReceiveId
+makeId :: (Integral a) => a -> ReceiveId
 makeId n = MkReceiveId $ fromIntegral n
 
 makeMessages :: Int -> [Message]

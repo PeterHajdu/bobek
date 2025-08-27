@@ -51,13 +51,13 @@ fileEnvSpec =
       it "handles end of file as an empty queue" $ do
         maybeMessage <- readFromFile (ioError $ IOError Nothing EOF "" "" Nothing Nothing)
         maybeMessage `shouldBe` Left NMREmptyQueue
-    describe "createFileSource"
-      $ it "should handle io errors during file open"
-      $ do
-        (Left err) <- createFileSource "hopefullynonexistentfile"
-        err `shouldBe` "hopefullynonexistentfile: openFile: does not exist (No such file or directory)"
-    describe "createfiledestination"
-      $ it "should handle io errors during file open"
-      $ do
-        result <- createFileDestination "/hopefullynonexistentfile"
-        isLeft result `shouldBe` True
+    describe "createFileSource" $
+      it "should handle io errors during file open" $
+        do
+          (Left err) <- createFileSource "hopefullynonexistentfile"
+          err `shouldBe` "hopefullynonexistentfile: openFile: does not exist (No such file or directory)"
+    describe "createfiledestination" $
+      it "should handle io errors during file open" $
+        do
+          result <- createFileDestination "/hopefullynonexistentfile"
+          isLeft result `shouldBe` True

@@ -21,5 +21,5 @@ shouldAck (MkFilterActions actions) = Ack `elem` actions
 shouldCopy :: FilterActions -> Bool
 shouldCopy (MkFilterActions actions) = Copy `elem` actions
 
-class Monad m => Filter m where
+class (Monad m) => Filter m where
   filterAction :: Message -> m FilterActions

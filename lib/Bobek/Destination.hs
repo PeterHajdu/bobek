@@ -7,5 +7,5 @@ newtype DestinationError = MkDestinationError String deriving stock (Show)
 
 data PublishResult = MkPublishResult {failed :: [ReceiveId], succeeded :: [ReceiveId]}
 
-class Monad m => Destination m where
+class (Monad m) => Destination m where
   publish :: [Message] -> m PublishResult

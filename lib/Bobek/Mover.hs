@@ -20,13 +20,13 @@ getMessages :: (Logger m, Source m) => m (Maybe [Message])
 getMessages = do
   maybeMessages <- replicateM bulkSize receive
   let (messageNotReceivedReasons, messages) = partitionEithers maybeMessages
-  traverse_ (logError . reasonText) (filter (\r -> r /= NMREmptyQueue) messageNotReceivedReasons)
+  traverse_ (logError . reasonText) (filter (/= NMREmptyQueue) messageNotReceivedReasons)
   return $
     if null messages
       then Nothing
       else Just messages
 
-runFilter :: Filter m => [Message] -> m [(FilterActions, Message)]
+runFilter :: (Filter m) => [Message] -> m [(FilterActions, Message)]
 runFilter msgs = do
   filterActions <- traverse filterAction msgs
   pure $ zip filterActions msgs
@@ -40,13 +40,13 @@ splitUpMessagesByAction = foldl' splitter (Set.empty, [], Set.empty)
           newNoPub = if shouldCopy actions then oldNoPub else Set.insert (receiveId msg) oldNoPub
        in (newAck, newPub, newNoPub)
 
-publishMessages :: Destination m => [Message] -> m (Set.Set ReceiveId)
+publishMessages :: (Destination m) => [Message] -> m (Set.Set ReceiveId)
 publishMessages msgs =
   if null msgs
     then return Set.empty
     else Set.fromList . succeeded <$> publish msgs
 
---todo: remove forall and extension
+-- todo: remove forall and extension
 publishAndAckMessages :: (Logger m, Source m, Destination m, Filter m) => [Message] -> m ()
 publishAndAckMessages msgs = do
   actionsWithMessage <- runFilter msgs

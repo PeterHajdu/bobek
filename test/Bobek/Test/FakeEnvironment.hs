@@ -56,5 +56,5 @@ instance Filter FakeEnvironment where
 instance Logger FakeEnvironment where
   logError msg = do
     env@(MkEnv _ _ _ _ _ loggedMessages) <- get
-    put $ env { logged = loggedMessages ++ [msg]}
+    put $ env {logged = loggedMessages ++ [msg]}
   logDebug = logError
